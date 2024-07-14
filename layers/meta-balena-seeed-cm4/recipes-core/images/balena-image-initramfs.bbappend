@@ -1,0 +1,1 @@
+IMAGE_ROOTFS_MAXSIZE:raspberrypi4-64 = "51200"

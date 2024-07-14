@@ -1,0 +1,18 @@
+#!/bin/sh
+
+#
+# This hook updates raspberrypi4 boot firmware located in the SPI EEPROM
+#
+# Update procedure is based on the rpi-eeprom-update script available at
+# https://github.com/raspberrypi/rpi-eeprom/blob/master/rpi-eeprom-update
+
+set -o errexit
+
+# shellcheck disable=SC1091
+. /usr/libexec/os-helpers-logging
+
+info "Updating SPI EEPROM firmware"
+
+if ! /usr/libexec/pieeprom-update.sh; then
+	error "Failed to update SPI EEPROM firmware"
+fi

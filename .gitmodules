@@ -1,0 +1,24 @@
+[submodule "layers/meta-balena"]
+	path = layers/meta-balena
+	url = https://github.com/balena-os/meta-balena.git
+	branch = master
+[submodule "balena-yocto-scripts"]
+	path = balena-yocto-scripts
+	url = https://github.com/balena-os/balena-yocto-scripts.git
+	branch = master
+[submodule "contracts"]
+	path = contracts
+	url = https://github.com/balena-io/contracts.git
+	branch = master
+[submodule "layers/poky"]
+	path = layers/poky
+	url = git://git.yoctoproject.org/poky.git
+	branch = kirkstone
+[submodule "layers/meta-openembedded"]
+	path = layers/meta-openembedded
+	url = git://git.openembedded.org/meta-openembedded
+	branch = kirkstone
+[submodule "layers/meta-raspberrypi"]
+	path = layers/meta-raspberrypi
+	url = git://git.yoctoproject.org/meta-raspberrypi
+	branch = kirkstone
