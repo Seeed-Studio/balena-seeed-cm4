@@ -64,6 +64,11 @@ BALENA_BOOT_PARTITION_FILES:append:raspberrypi4-64 = " \
 "
 
 BALENA_BOOT_PARTITION_FILES:append:raspberrypi4-64 = "${@oe.utils.conditional('SIGN_API','','',' rpi-eeprom/pieeprom-latest-stable.sig:/pieeprom-latest-stable.sig',d)}"
-
+IMAGE_INSTALL:append:raspberrypi4-64 = " \
+	seeed-linux-dtoverlays \
+    rs485-control-de \
+	iperf3 \
+	i2c-tools \
+    "
 inherit image-sign-rpi
 

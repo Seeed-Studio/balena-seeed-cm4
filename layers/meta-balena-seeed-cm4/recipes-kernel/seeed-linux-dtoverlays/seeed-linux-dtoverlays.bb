@@ -13,6 +13,7 @@ SRCREV = "${AUTOREV}"
 
 SRC_URI = "git://github.com/Seeed-Studio/seeed-linux-dtoverlays.git;protocol=https;branch=master \
 	file://0001-compatible-for-yocto.patch \
+	file://0001-fix-the-compilation-error-for-rtc-pcf563w.patch \
 	"
 
 DEPENDS += " dtc-native"
