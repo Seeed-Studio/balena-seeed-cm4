@@ -2,10 +2,6 @@ FILESEXTRAPATHS:append := ":${THISDIR}/files"
 
 LIC_FILES_CHKSUM = "file://LICENCE.broadcom;md5=c403841ff2837657b2ed8e5bb474ac8d"
 
-SRC_URI += " \
-    file://fincm3-dt-blob.bin \
-"
-
 RPIFW_DATE = "20230509~buster"
 
 SRC_URI[md5sum] = "20053767dd390cff9543a9b29f01729d"
@@ -39,11 +35,6 @@ do_deploy:append() {
         rm -f ${DEPLOYDIR}/${BOOTFILES_DIR_NAME}/start4cd.elf
         rm -f ${DEPLOYDIR}/${BOOTFILES_DIR_NAME}/start4x.elf
     fi
-}
-
-do_deploy:append:fincm3() {
-    # Install the dt-blob needed for camera support in Balena Fin CM3
-    install -m 644 ${WORKDIR}/fincm3-dt-blob.bin ${DEPLOYDIR}/${BOOTFILES_DIR_NAME}/dt-blob.bin
 }
 
 do_deploy:append() {

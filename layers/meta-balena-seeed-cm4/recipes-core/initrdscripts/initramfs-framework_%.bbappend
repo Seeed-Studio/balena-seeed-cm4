@@ -10,11 +10,6 @@ SUMMARY:initramfs-module-kexec-pi4-fwgpio = "Hook necessary to persist the value
 RDEPENDS:initramfs-module-kexec-pi4-fwgpio = "initramfs-module-kexec"
 FILES:initramfs-module-kexec-pi4-fwgpio = "/init.d/73-kexec_pi4_fwgpio"
 
-PACKAGES:remove:revpi = "initramfs-module-migrate"
-do_install:append:revpi() {
-	rm -f ${D}/init.d/92-migrate
-}
-
 do_install:append() {
 	install -d ${D}/init.d
 

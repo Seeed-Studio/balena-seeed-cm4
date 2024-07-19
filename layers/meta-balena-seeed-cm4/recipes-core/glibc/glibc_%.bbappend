@@ -7,7 +7,3 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/glibc:"
 SRC_URI:append:raspberrypi4-64 = " \
     file://Fix-build-failures-with-GCC11.patch \
 "
-
-SRC_URI:append:raspberrypi3-64 = " \
-    file://Fix-build-failures-with-GCC11.patch \
-"

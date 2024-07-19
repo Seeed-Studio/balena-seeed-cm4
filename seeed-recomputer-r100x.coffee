@@ -3,9 +3,9 @@ deviceTypesCommon = require '@resin.io/device-types/common'
 
 module.exports =
 	version: 1
-	slug: 'raspberrypicm4-ioboard'
-	aliases: [ 'raspberrypicm4-ioboard' ]
-	name: 'Raspberry Pi CM4 IO Board'
+	slug: 'seeed-recomputer-r100x'
+	aliases: [ 'seeed-recomputer-r100x' ]
+	name: 'seeed reComputer-R100x'
 	arch: 'aarch64'
 	state: 'new'
 

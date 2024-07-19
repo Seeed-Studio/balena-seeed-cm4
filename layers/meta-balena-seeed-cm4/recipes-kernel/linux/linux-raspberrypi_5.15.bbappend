@@ -1,19 +1,5 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:${THISDIR}/${MACHINE}:"
 
-SRC_URI:append:fincm3 = " \
-	file://0001-overlays-fin-add-internal-pull-ups-to-i2c_soft.patch \
-	file://0004-mmc-pwrseq-Repurpose-for-Marvell-SD8777.patch \
-	file://0005-balena-fin-wifi-sta-uap-mode.patch \
-	file://0007-overlays-Add-spyfly.dts.patch \
-"
-
-SRC_URI:append:raspberrypi4-superhub = " \
-	file://0001-Add-gpio-wdt-DT-overlay-for-Phoenix-Board.patch \
-	file://0002-Add-infineon-tpm-DT-overlay-for-Phoenix-Board.patch \
-	file://0003-Add-spi1-DT-overlay-for-Phoenix-Board.patch \
-	file://0004-Add-SD-host-DT-overlay-for-Phoenix-Board.patch \
-"
-
 SRC_URI:append = " \
 	file://0002-wireless-wext-Bring-back-ndo_do_ioctl-fallback.patch \
 	file://0001-Add-npe-x500-m3-overlay.patch \
@@ -23,18 +9,6 @@ SRC_URI:append = " \
 	file://0001-seeed-studio-can-bus-v2-Add-dtbo-for-this-can-bus.patch \
 	file://0011-USB-serial-Add-support-for-more-Quectel-modules.patch \
 	file://0001-waveshare-sim7600-Add-dtbo-for-this-modem.patch \
-"
-
-SRC_URI:append:rt-rpi-300 = " \
-	file://rt-rpi-300-Add-changes-for-this-dt.patch \
-	file://rt-rpi-Add-ch-432t-driver-for-this-chip.patch \
-"
-
-# BalenaOS already disables gcc plugins,
-# however the unipi-neuron adds an extra module
-# which seems to override the default configuration
-SRC_URI:append:raspberrypi3-unipi-neuron = " \
-	file://0001-pi3neuron-disable-gccplugins.patch \
 "
 
 BALENA_CONFIGS:append = " fbtft"
@@ -188,7 +162,6 @@ BALENA_CONFIGS[rtrpi300cfgs] = " \
 # The Pi3-64 and Pi4-64 are the only boards very low on rootfs space for now
 # so we add this as per https://github.com/balena-os/meta-balena/pull/2411
 BALENA_CONFIGS:append:raspberrypi4-64 = " optimize-size"
-BALENA_CONFIGS:append:raspberrypi3-64 = " optimize-size"
 BALENA_CONFIGS[optimize-size] = " \
     CONFIG_CC_OPTIMIZE_FOR_SIZE=y \
 "
