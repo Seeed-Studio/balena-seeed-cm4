@@ -11,6 +11,10 @@ SRC_URI:append = " \
 	file://0001-waveshare-sim7600-Add-dtbo-for-this-modem.patch \
 "
 
+SRC_URI:append:seeed-recomputer-r100x:= " \
+    file://0001-Add-serial-RTS-control-gpio.patch \
+"
+
 BALENA_CONFIGS:append = " fbtft"
 BALENA_CONFIGS[fbtft] = " \
     CONFIG_STAGING=y \
