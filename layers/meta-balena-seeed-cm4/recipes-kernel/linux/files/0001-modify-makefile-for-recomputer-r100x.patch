@@ -1,7 +1,7 @@
 From 3a8286b03593f47e08a0180ce7b7f35d5553ca60 Mon Sep 17 00:00:00 2001
 From: bigbearishappy <953308023@qq.com>
 Date: Mon, 11 Oct 2021 05:49:21 +0000
-Subject: [PATCH] modify makefile for reterminal
+Subject: [PATCH] modify makefile for recomputer-r100x
 
 ---
  arch/arm/boot/dts/overlays/Makefile | 3 ++-
@@ -17,7 +17,7 @@ index 44aedc149ff0..a6f769697e9c 100644
  	wittypi.dtbo \
 -	wm8960-soundcard.dtbo
 +	wm8960-soundcard.dtbo \
-+	reTerminal.dtbo
++	reComputer-R100x.dtbo
  
  targets += dtbs dtbs_install
  targets += $(dtbo-y)

@@ -1,5 +1,6 @@
 # Supported machines
 #MACHINE ?= "seeed-recomputer-r100x"
+#MACHINE ?= "seeed-recomputer-r110x"
 
 # More info meta-resin/README.md
 #TARGET_REPOSITORY ?= ""
