@@ -228,7 +228,6 @@ jobs:
           docker pull debian:bullseye
           docker pull docker:19.03.10-dind
           docker pull balenalib/intel-nuc-debian:buster-20210705
-          docker pull ghcr.io/balena-os/balena-yocto-script:1.25.22-yocto-build-env
           MACHINE=${{ inputs.machine }} bitbake balena-image
           echo "Build completed successfully"
           
