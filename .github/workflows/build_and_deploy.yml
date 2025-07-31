@@ -1,17 +1,424 @@
-name: 'Deploy on release tag'
+# ---------------------------------------------------------------------------
+#
+# GitHub Actions CI workflow for Seeed-Studio/balena-seeed-cm4
+# Based on Yocto/Balena build system with rclone sstate caching
+#
+# ---------------------------------------------------------------------------
+#
+# This workflow builds the Balena OS for Seeed CM4 devices
+# using containerized builds with rclone for sstate caching
+# and uploads the final images to GitHub releases
+#
+# ---------------------------------------------------------------------------
+
+name: seeed-balena-cm4-build
 
 on:
-  push:
-    tags:
-      - v[0-9]+.[0-9]+.[0-9]+\+?r?e?v?*
-      - v20[0-9][0-9].[0-1]?[1470].[0-9]+
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+    inputs:
+      machine:
+        type: choice
+        description: 'Target device to build'
+        options:
+          - seeed-recomputer-r100x
+        default: 'seeed-recomputer-r100x'
+      build_type:
+        type: choice
+        description: 'Build type'
+        options:
+          - development
+          - production
+        default: 'development'
+      upload_release:
+        type: boolean
+        description: 'Upload to GitHub release'
+        default: true
+      clean_build:
+        type: boolean
+        description: 'Clean build (ignore sstate cache)'
+        default: false
+
+env:
+  LANG: "en_US.UTF-8"
+  DEBIAN_FRONTEND: noninteractive
+  # Balena build environment variables
+  BALENA_DEVICE_TYPE: ${{ inputs.machine }}
+  VERBOSE: "1"
+  # Docker build configuration
+  DOCKER_BUILDKIT: 1
+  BUILDX_NO_DEFAULT_ATTESTATIONS: 1
 
 jobs:
-  release-on-tag:
-    uses: balena-os/github-workflows/.github/workflows/build_and_deploy.yml@0192d70429dd7bce1aee056ec3369514f682d48a # v0.0.27
-    with:
-      deployTo: "production"
-    secrets: inherit
+  build-balena-image:
+    name: Build Balena OS Image
+    runs-on: ubuntu-22.04
+    timeout-minutes: 480  # 8 hours timeout
+    
+    steps:
+      - name: Free disk space
+        run: |
+          sudo apt-get remove aria2 ansible shellcheck rpm xorriso zsync \
+          clang-6.0 lldb-6.0 lld-6.0 clang-format-6.0 clang-8 lldb-8 lld-8 clang-format-8 \
+          clang-9 lldb-9 lld-9 clangd-9 clang-format-9 \
+          esl-erlang gfortran-8 gfortran-9 \
+          cabal-install-2.0 cabal-install-2.2 \
+          cabal-install-2.4 cabal-install-3.0 cabal-install-3.2 heroku imagemagick \
+          libmagickcore-dev libmagickwand-dev libmagic-dev ant ant-optional kubectl \
+          mercurial apt-transport-https mono-complete mysql-client libmysqlclient-dev \
+          mysql-server mssql-tools unixodbc-dev yarn bazel chrpath libssl-dev libxft-dev \
+          libfreetype6 libfreetype6-dev libfontconfig1 libfontconfig1-dev \
+          php-zmq snmp pollinate libpq-dev postgresql-client ruby-full \
+          azure-cli google-cloud-sdk hhvm google-chrome-stable firefox powershell \
+          sphinxsearch subversion mongodb-org -yq >/dev/null 2>&1 \
+          || echo "failed main apt-get remove"
+          echo "Removing large packages"
+          sudo apt-get remove -y '^dotnet-.*'
+          sudo apt-get remove -y '^llvm-.*'
+          sudo apt-get remove -y 'php.*'
+          sudo apt-get autoremove -y >/dev/null 2>&1
+          sudo apt-get clean
+          sudo apt-get autoremove -y >/dev/null 2>&1
+          sudo apt-get autoclean -y >/dev/null 2>&1
+          #echo "https://github.com/actions/virtual-environments/issues/709"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          echo "remove big /usr/local"
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf /usr/local/lib/android >/dev/null 2>&1
+          sudo rm -rf /usr/share/dotnet/sdk > /dev/null 2>&1
+          sudo rm -rf /usr/share/dotnet/shared > /dev/null 2>&1
+          sudo rm -rf /usr/share/swift > /dev/null 2>&1
+          sudo -E apt-get -qq update
+          sudo -E apt-get -y install git
+          sudo -E apt-get -qq autoremove --purge
+          sudo -E apt-get -qq clean
+          df -h
+
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+                            # 246 MB    (<none>)
+                            # 124 MB    (debian)
+                            # 1590 MB   (balena-yocto-scripts)
+                            # 163 MB    (balenalib/intel-nuc)
+                            # + 225 MB  (docker)
+                            # ---------
+                            # 2348 MB  ~ 2500 MB
+          root-reserve-mb: 2500 
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Set up build environment
+        run: |
+          # Install required packages
+          sudo apt-get install -y \
+            gawk wget git git-lfs diffstat unzip texinfo gcc build-essential \
+            chrpath socat cpio python3-pexpect xz-utils debianutils iputils-ping \
+            python3-git python3-jinja2 libegl1-mesa libsdl1.2-dev pylint xterm \
+            python3-subunit mesa-common-dev zstd liblz4-tool file \
+            locales
+          
+          # Configure locales
+          sudo locale-gen --purge "en_US.UTF-8"
+          sudo update-locale "LANG=en_US.UTF-8"
+          sudo dpkg-reconfigure --frontend noninteractive locales
+          
+          # Set up shell
+          sudo rm -f /bin/sh && sudo ln -s bash /bin/sh
+          
+          # Add user to docker group
+          sudo usermod -aG docker $USER
+
+          #check space
+          echo "Checking available disk space..."
+          df -h || true
+
+      - name: Setup Rclone
+        uses: AnimMouse/setup-rclone@v1
+        with:
+          version: v1.67.0
+          rclone_config: ${{ secrets.RCLONE_CONFIG }}
+
+      - name: Get build information
+        id: build_info
+        run: |
+          # Get build timestamp
+          BUILD_DATE=$(date -u +"%Y-%m-%d_%H-%M-%S")
+          echo "BUILD_DATE=$BUILD_DATE" >> $GITHUB_OUTPUT
+          
+          # Generate build ID
+          BUILD_ID="${{ inputs.machine }}_${BUILD_DATE}_${GITHUB_SHA:0:8}"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_OUTPUT
+          
+          # Set image names based on machine
+          case "${{ inputs.machine }}" in
+            "seeed-recomputer-r100x")
+              IMAGE_NAME="balena-image-seeed-recomputer-r100x"
+              ;;
+            *)
+              IMAGE_NAME="balena-image-${{ inputs.machine }}"
+              ;;
+          esac
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_OUTPUT
+          
+          echo "Build ID: $BUILD_ID"
+          echo "Image name: $IMAGE_NAME"
+
+      - name: Setup sstate cache with rclone
+        if: ${{ !inputs.clean_build }}
+        run: |
+          # Create cache directories
+          mkdir -p ${{ github.workspace }}/build/sstate-cache
+          mkdir -p ${{ github.workspace }}/build/downloads
+          
+          # Download sstate cache from remote storage
+          echo "Downloading sstate cache..."
+          rclone copy -P --stats 1m seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
+            ${{ github.workspace }}/build/ \
+            --transfers 8 --checkers 8 --fast-list --ignore-existing
+          
+          if [ -f "${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar" ]; then
+            echo "Extracting sstate cache..."
+            tar --no-same-owner -xf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar -C ${{ github.workspace }}/build/sstate-cache
+            rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
+          fi
+
+          # Download shared downloads
+          echo "Downloading shared downloads..."
+          rclone copy -P --stats 1m seeed-storage:balena-cache/yocto-download.tar \
+            ${{ github.workspace }}/build/ \
+            --transfers 8 --checkers 8 --fast-list --ignore-existing
+          
+          if [ -f "${{ github.workspace }}/build/yocto-download.tar" ]; then
+            echo "Extracting downloads cache..."
+            tar --no-same-owner -xf ${{ github.workspace }}/build/yocto-download.tar -C ${{ github.workspace }}/build/downloads
+            rm -f ${{ github.workspace }}/build/yocto-download.tar
+          fi
+          
+          echo "Cache download completed"
+          du -sh ${{ github.workspace }}/build/sstate-cache || true
+          du -sh ${{ github.workspace }}/build/downloads || true
+
+      - name: Build Balena OS image
+        run: |
+          # Create shared directory for containerized build
+          mkdir -p ${{ github.workspace }}/build
+          
+          # Run containerized build
+          echo "Starting Balena OS build for ${{ inputs.machine }}"
+          
+          # Set build options based on build type
+          if [ "${{ inputs.build_type }}" = "development" ]; then
+            BUILD_OPTIONS="-d"  # Development build
+          else
+            BUILD_OPTIONS=""   # Production build
+          fi
+          
+          # Run the build
+          ./balena-yocto-scripts/build/barys --dry-run
+          source layers/poky/oe-init-build-env
+          MACHINE=${{ inputs.machine }} bitbake balena-image
+          echo "Build completed successfully"
+          
+
+      - name: Get Yocto build variables
+        id: yocto_vars
+        run: |
+          # Extract build information from Yocto
+          cd ${{ github.workspace }}/build
+          
+          # Try to get version information from build
+          if [ -f "conf/local.conf" ]; then
+            OS_VERSION=$(grep -E "^OS_VERSION" conf/local.conf | cut -d'"' -f2 || echo "unknown")
+            BALENA_VERSION=$(grep -E "^BALENA_VERSION" conf/local.conf | cut -d'"' -f2 || echo "unknown")
+          else
+            OS_VERSION="unknown"
+            BALENA_VERSION="unknown"
+          fi
+          
+          echo "OS_VERSION=$OS_VERSION" >> $GITHUB_OUTPUT
+          echo "BALENA_VERSION=$BALENA_VERSION" >> $GITHUB_OUTPUT
+          echo "MACHINE=${{ inputs.machine }}" >> $GITHUB_OUTPUT
+          
+          echo "OS Version: $OS_VERSION"
+          echo "Balena Version: $BALENA_VERSION"
+          echo "Machine: ${{ inputs.machine }}"
+
+      - name: Upload sstate cache with rclone
+        if: success()
+        run: |
+          # Upload updated sstate cache back to remote storage
+          echo "Uploading sstate cache..."
+          if [ -d "${{ github.workspace }}/build/sstate-cache" ] && [ "$(ls -A ${{ github.workspace }}/build/sstate-cache)" ]; then
+            tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+            -C ${{ github.workspace }}/build/sstate-cache .
+            rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+              seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
+              --update
+            rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
+          else
+            echo "No sstate cache to upload"
+          fi
+          
+          # Upload downloads cache
+          echo "Uploading downloads cache..."
+          if [ -d "${{ github.workspace }}/build/downloads" ] && [ "$(ls -A ${{ github.workspace }}/build/downloads)" ]; then
+            tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
+            -C ${{ github.workspace }}/build/downloads .
+            rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
+              seeed-storage:balena-cache/yocto-download.tar \
+              --update
+            rm -f ${{ github.workspace }}/build/yocto-download.tar
+          else
+            echo "No downloads cache to upload"
+          fi
+          
+          echo "Cache upload completed"
+
+      - name: Prepare release artifacts
+        if: success()
+        id: artifacts
+        run: |
+          # Create release directory
+          mkdir -p ${{ github.workspace }}/release
+          
+          # Find and copy built images
+          DEPLOY_DIR="${{ github.workspace }}/build/deploy/images/${{ inputs.machine }}"
+          
+          if [ -d "$DEPLOY_DIR" ]; then
+            echo "Found deploy directory: $DEPLOY_DIR"
+            ls -la "$DEPLOY_DIR"
+            
+            # Copy image files
+            find "$DEPLOY_DIR" -name "*.img" -o -name "*.img.gz" -o -name "*.img.bz2" -o -name "*.img.xz" | while read img; do
+              echo "Copying image: $(basename $img)"
+              cp "$img" ${{ github.workspace }}/release/
+            done
+            
+            # Copy other important files
+            find "$DEPLOY_DIR" -name "*.wic" -o -name "*.wic.gz" -o -name "*.wic.bz2" -o -name "*.wic.xz" | while read wic; do
+              echo "Copying WIC image: $(basename $wic)"
+              cp "$wic" ${{ github.workspace }}/release/
+            done
+            
+            # Copy manifest and other metadata
+            find "$DEPLOY_DIR" -name "*.manifest" -o -name "*.testdata.json" -o -name "*.buildinfo" | while read meta; do
+              echo "Copying metadata: $(basename $meta)"
+              cp "$meta" ${{ github.workspace }}/release/
+            done
+          else
+            echo "Deploy directory not found: $DEPLOY_DIR"
+            exit 1
+          fi
+          
+          # Create build information file
+          cat > ${{ github.workspace }}/release/build_info_${{ steps.build_info.outputs.BUILD_ID }}.txt << EOF
+          BUILD_ID=${{ steps.build_info.outputs.BUILD_ID }}
+          MACHINE=${{ inputs.machine }}
+          BUILD_TYPE=${{ inputs.build_type }}
+          BUILD_DATE=${{ steps.build_info.outputs.BUILD_DATE }}
+          COMMIT_SHA=${GITHUB_SHA}
+          COMMIT_REF=${GITHUB_REF}
+          OS_VERSION=${{ steps.yocto_vars.outputs.OS_VERSION }}
+          BALENA_VERSION=${{ steps.yocto_vars.outputs.BALENA_VERSION }}
+          GITHUB_RUN_ID=${GITHUB_RUN_ID}
+          GITHUB_RUN_NUMBER=${GITHUB_RUN_NUMBER}
+          EOF
+          
+          # List all artifacts
+          echo "Release artifacts:"
+          ls -la ${{ github.workspace }}/release/
+          
+          # Set outputs for release
+          echo "RELEASE_TAG=v${{ steps.build_info.outputs.BUILD_DATE }}-${{ inputs.machine }}" >> $GITHUB_OUTPUT
+          echo "RELEASE_NAME=Balena OS for ${{ inputs.machine }} - ${{ steps.build_info.outputs.BUILD_DATE }}" >> $GITHUB_OUTPUT
+
+      - name: Upload artifacts as build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: balena-${{ inputs.machine }}-${{ steps.build_info.outputs.BUILD_ID }}
+          path: ${{ github.workspace }}/release/
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: ${{ inputs.upload_release && success() }}
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.artifacts.outputs.RELEASE_TAG }}
+          name: ${{ steps.artifacts.outputs.RELEASE_NAME }}
+          body: |
+            # Balena OS Build for ${{ inputs.machine }}
+            
+            **Build Information:**
+            - Machine: `${{ inputs.machine }}`
+            - Build Type: `${{ inputs.build_type }}`
+            - Build Date: `${{ steps.build_info.outputs.BUILD_DATE }}`
+            - Commit: `${{ github.sha }}`
+            - OS Version: `${{ steps.yocto_vars.outputs.OS_VERSION }}`
+            - Balena Version: `${{ steps.yocto_vars.outputs.BALENA_VERSION }}`
+            
+            **Files:**
+            This release contains the Balena OS image for the ${{ inputs.machine }} device.
+            
+            **Installation:**
+            Flash the `.img` file to an SD card or eMMC storage using balenaEtcher or dd.
+            
+            ---
+            *Built with GitHub Actions*
+          draft: false
+          prerelease: ${{ inputs.build_type == 'development' }}
+          files: ${{ github.workspace }}/release/*
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Machine**: ${{ inputs.machine }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Type**: ${{ inputs.build_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build ID**: ${{ steps.build_info.outputs.BUILD_ID }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build Date**: ${{ steps.build_info.outputs.BUILD_DATE }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS Version**: ${{ steps.yocto_vars.outputs.OS_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Balena Version**: ${{ steps.yocto_vars.outputs.BALENA_VERSION }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ inputs.upload_release }}" = "true" ]; then
+            echo "- **Release**: [${{ steps.artifacts.outputs.RELEASE_TAG }}](${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.artifacts.outputs.RELEASE_TAG }})" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Artifacts" >> $GITHUB_STEP_SUMMARY
+          if [ -d "${{ github.workspace }}/release" ]; then
+            for file in ${{ github.workspace }}/release/*; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                size=$(ls -lh "$file" | awk '{print $5}')
+                echo "- \`$filename\` ($size)" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          fi
+
+  cleanup:
+    name: Cleanup build artifacts
+    runs-on: ubuntu-22.04
+    needs: build-balena-image
+    if: always()
+    
+    steps:
+      - name: Cleanup workspace
+        run: |
+          echo "Cleaning up workspace..."
+          # Show final disk usage
+          df -h
