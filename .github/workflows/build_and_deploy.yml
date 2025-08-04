@@ -219,6 +219,43 @@ jobs:
           du -sh ${{ github.workspace }}/build/downloads || true
           ls -lS ${{ github.workspace }}/build/sstate-cache | head -n 10
           ls -lS ${{ github.workspace }}/build/downloads | head -n 10
+          
+          # Record initial file timestamps for change detection
+          echo "Recording initial file timestamps..."
+          mkdir -p ${{ github.workspace }}/build/cache-tracking
+          
+          # Record sstate-cache files recursively
+          echo "Scanning sstate-cache directory..."
+          if [ -d "${{ github.workspace }}/build/sstate-cache" ]; then
+            find "${{ github.workspace }}/build/sstate-cache" -type f -printf "%T@ %p\n" 2>/dev/null > ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt
+            sstate_count=$(wc -l < ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt 2>/dev/null || echo 0)
+          else
+            touch ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt
+            sstate_count=0
+          fi
+          
+          # Record downloads files recursively  
+          echo "Scanning downloads directory..."
+          if [ -d "${{ github.workspace }}/build/downloads" ]; then
+            find "${{ github.workspace }}/build/downloads" -type f -printf "%T@ %p\n" 2>/dev/null > ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt
+            downloads_count=$(wc -l < ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt 2>/dev/null || echo 0)
+          else
+            touch ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt
+            downloads_count=0
+          fi
+          
+          echo "Initial sstate-cache files: $sstate_count"
+          echo "Initial downloads files: $downloads_count"
+          
+          # Show sample files for debugging
+          if [ "$sstate_count" -gt 0 ]; then
+            echo "Sample sstate-cache files:"
+            head -5 ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt
+          fi
+          if [ "$downloads_count" -gt 0 ]; then
+            echo "Sample downloads files:"
+            head -5 ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt
+          fi
 
       # - name: Setup tmate session
       #   uses: mxschmitt/action-tmate@v3
@@ -325,37 +362,6 @@ jobs:
           echo "Balena Version: $BALENA_VERSION"
           echo "Machine: ${{ inputs.machine }}"
 
-      - name: Upload sstate cache with rclone
-        if: steps.build_step.outcome == 'success'
-        run: |
-          # Upload updated sstate cache back to remote storage
-          echo "Uploading sstate cache..."
-          if [ -d "${{ github.workspace }}/build/sstate-cache" ] && [ "$(ls -A ${{ github.workspace }}/build/sstate-cache)" ]; then
-            tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
-            -C ${{ github.workspace }}/build/sstate-cache .
-            rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
-              seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
-              --update
-            rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
-          else
-            echo "No sstate cache to upload"
-          fi
-          
-          # Upload downloads cache
-          echo "Uploading downloads cache..."
-          if [ -d "${{ github.workspace }}/build/downloads" ] && [ "$(ls -A ${{ github.workspace }}/build/downloads)" ]; then
-            tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
-            -C ${{ github.workspace }}/build/downloads .
-            rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
-              seeed-storage:balena-cache/yocto-download.tar \
-              --update
-            rm -f ${{ github.workspace }}/build/yocto-download.tar
-          else
-            echo "No downloads cache to upload"
-          fi
-          
-          echo "Cache upload completed"
-
       - name: Prepare release artifacts
         if: steps.build_step.outcome == 'success'
         id: artifacts
@@ -433,6 +439,120 @@ jobs:
           draft: false
           prerelease: ${{ inputs.build_type == 'development' }}
           files: ${{ github.workspace }}/release/*
+          
+      - name: Upload sstate cache with rclone
+        if: steps.build_step.outcome == 'success'
+        run: |
+          # Function to check if file changes exceed threshold
+          check_file_changes() {
+            local cache_type="$1"
+            local cache_dir="$2"
+            local initial_file="$3"
+            local threshold=20  # 20% threshold
+            
+            echo "Checking $cache_type file changes..."
+            
+            # Get current file list
+            find "$cache_dir" -type f -printf "%T@ %p\n" 2>/dev/null > "${{ github.workspace }}/build/cache-tracking/${cache_type}-current.txt" || {
+              echo "No current $cache_type files found"
+              return 1
+            }
+            
+            # Count files
+            local initial_count=$(wc -l < "$initial_file" 2>/dev/null || echo 0)
+            local current_count=$(wc -l < "${{ github.workspace }}/build/cache-tracking/${cache_type}-current.txt" 2>/dev/null || echo 0)
+            
+            echo "Initial $cache_type files: $initial_count"
+            echo "Current $cache_type files: $current_count"
+            
+            # If no initial files, always upload
+            if [ "$initial_count" -eq 0 ]; then
+              echo "No initial $cache_type files, uploading new cache"
+              return 0
+            fi
+            
+            # Check for new files (files in current but not in initial)
+            local new_files=0
+            while IFS= read -r line; do
+              local filepath=$(echo "$line" | cut -d' ' -f2-)
+              if ! grep -q "$filepath" "$initial_file" 2>/dev/null; then
+                ((new_files++))
+              fi
+            done < "${{ github.workspace }}/build/cache-tracking/${cache_type}-current.txt"
+            
+            # Check for modified files (files with different timestamps)
+            local modified_files=0
+            while IFS= read -r line; do
+              local timestamp=$(echo "$line" | cut -d' ' -f1)
+              local filepath=$(echo "$line" | cut -d' ' -f2-)
+              local initial_timestamp=$(grep "$filepath" "$initial_file" 2>/dev/null | cut -d' ' -f1 || echo "0")
+              
+              if [ "$initial_timestamp" != "0" ] && [ "$timestamp" != "$initial_timestamp" ]; then
+                ((modified_files++))
+              fi
+            done < "${{ github.workspace }}/build/cache-tracking/${cache_type}-current.txt"
+            
+            local total_changes=$((new_files + modified_files))
+            local change_percentage=0
+            
+            if [ "$initial_count" -gt 0 ]; then
+              change_percentage=$(( (total_changes * 100) / initial_count ))
+            fi
+            
+            echo "New $cache_type files: $new_files"
+            echo "Modified $cache_type files: $modified_files"
+            echo "Total changes: $total_changes"
+            echo "Change percentage: $change_percentage%"
+            
+            # Return 0 (upload) if changes exceed threshold, 1 (skip) otherwise
+            if [ "$change_percentage" -gt "$threshold" ]; then
+              echo "Changes ($change_percentage%) exceed threshold ($threshold%), will upload"
+              return 0
+            else
+              echo "Changes ($change_percentage%) below threshold ($threshold%), skipping upload"
+              return 1
+            fi
+          }
+          
+          # Upload updated sstate cache back to remote storage
+          echo "Checking sstate cache changes..."
+          if [ -d "${{ github.workspace }}/build/sstate-cache" ] && [ "$(ls -A ${{ github.workspace }}/build/sstate-cache)" ]; then
+            if check_file_changes "sstate-cache" "${{ github.workspace }}/build/sstate-cache" "${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt"; then
+              echo "Uploading sstate cache..."
+              tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+              -C ${{ github.workspace }}/build/sstate-cache .
+              rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+                seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
+                --update
+              rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
+              echo "sstate cache uploaded successfully"
+            else
+              echo "Skipping sstate cache upload (insufficient changes)"
+            fi
+          else
+            echo "No sstate cache to upload"
+          fi
+          
+          # Upload downloads cache
+          echo "Checking downloads cache changes..."
+          if [ -d "${{ github.workspace }}/build/downloads" ] && [ "$(ls -A ${{ github.workspace }}/build/downloads)" ]; then
+            if check_file_changes "downloads" "${{ github.workspace }}/build/downloads" "${{ github.workspace }}/build/cache-tracking/downloads-initial.txt"; then
+              echo "Uploading downloads cache..."
+              tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
+              -C ${{ github.workspace }}/build/downloads .
+              rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
+                seeed-storage:balena-cache/yocto-download.tar \
+                --update
+              rm -f ${{ github.workspace }}/build/yocto-download.tar
+              echo "downloads cache uploaded successfully"
+            else
+              echo "Skipping downloads cache upload (insufficient changes)"
+            fi
+          else
+            echo "No downloads cache to upload"
+          fi
+          
+          echo "Cache upload process completed"
 
       - name: Build summary
         if: always()
