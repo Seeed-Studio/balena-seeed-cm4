@@ -192,7 +192,7 @@ jobs:
           
           # Download sstate cache from remote storage
           echo "Downloading sstate cache..."
-          rclone copy -P --stats 1m seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
+          rclone copy -P --stats 1m seeed-storage:yocto-cache/balenaos-v6.5.47/${{ inputs.machine }}.sstate-cache.tar \
             ${{ github.workspace }}/build/ \
             --transfers 8 --checkers 8 --fast-list --ignore-existing
           
@@ -204,7 +204,7 @@ jobs:
 
           # Download shared downloads
           echo "Downloading shared downloads..."
-          rclone copy -P --stats 1m seeed-storage:balena-cache/yocto-download.tar \
+          rclone copy -P --stats 1m seeed-storage:yocto-cache/balenaos-v6.5.47/yocto-download.tar \
             ${{ github.workspace }}/build/ \
             --transfers 8 --checkers 8 --fast-list --ignore-existing
           
@@ -439,7 +439,7 @@ jobs:
           draft: false
           prerelease: ${{ inputs.build_type == 'development' }}
           files: ${{ github.workspace }}/release/*
-          
+
       - name: Upload sstate cache with rclone
         if: steps.build_step.outcome == 'success'
         run: |
@@ -522,7 +522,7 @@ jobs:
               tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
               -C ${{ github.workspace }}/build/sstate-cache .
               rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
-                seeed-storage:balena-cache/${{ inputs.machine }}.sstate-cache.tar \
+                seeed-storage:yocto-cache/balenaos-v6.5.47/${{ inputs.machine }}.sstate-cache.tar \
                 --update
               rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
               echo "sstate cache uploaded successfully"
@@ -541,7 +541,7 @@ jobs:
               tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
               -C ${{ github.workspace }}/build/downloads .
               rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
-                seeed-storage:balena-cache/yocto-download.tar \
+                seeed-storage:yocto-cache/balenaos-v6.5.47/yocto-download.tar \
                 --update
               rm -f ${{ github.workspace }}/build/yocto-download.tar
               echo "downloads cache uploaded successfully"
