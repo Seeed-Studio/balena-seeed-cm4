@@ -5,7 +5,7 @@ HOMEPAGE = "https://github.com/Seeed-Studio/seeed-linux-dtoverlays"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://${WORKDIR}/git/COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 
-inherit linux-kernel-base module-base
+inherit linux-kernel-base module-base deploy
 
 KERNEL_VERSION = "${@get_kernelversion_file("${STAGING_KERNEL_BUILDDIR}")}"
 
@@ -38,6 +38,44 @@ do_install() {
         CROSS_COMPILE=${TARGET_PREFIX} \
         KO_DIR=${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/ \
         install_rpi
+    
+    # Install device tree overlay files to package
+    install -d ${D}${DEPLOYDIR}
+    if [ -d overlays/rpi ]; then
+        for dtbo in overlays/rpi/*.dtbo; do
+            if [ -f "$dtbo" ]; then
+                dtbo_name=$(basename "$dtbo")
+                # Skip reComputer-R100x.dtbo
+                if [ "$dtbo_name" = "reComputer-R100x.dtbo" ] || [ "$dtbo_name" = "reComputer-R100x-overlay.dtbo" ]; then
+                    continue
+                fi
+                # Remove '-overlay' suffix if present for standard naming
+                target_name=$(echo "$dtbo_name" | sed 's/-overlay\.dtbo$/.dtbo/')
+                install -m 0644 "$dtbo" "${D}${DEPLOYDIR}/$target_name"
+            fi
+        done
+    fi
 }
 
+do_deploy() {
+    # Deploy device tree overlay files to main deploy directory
+    if [ -d overlays/rpi ]; then
+        for dtbo in overlays/rpi/*.dtbo; do
+            if [ -f "$dtbo" ]; then
+                dtbo_name=$(basename "$dtbo")
+                # Skip reComputer-R100x.dtbo
+                if [ "$dtbo_name" = "reComputer-R100x.dtbo" ] || [ "$dtbo_name" = "reComputer-R100x-overlay.dtbo" ]; then
+                    continue
+                fi
+                # Remove '-overlay' suffix if present for standard naming
+                target_name=$(echo "$dtbo_name" | sed 's/-overlay\.dtbo$/.dtbo/')
+                install -m 0644 "$dtbo" "${DEPLOYDIR}/$target_name"
+            fi
+        done
+    fi
+}
+
+addtask deploy before do_build after do_compile
+
 FILES:${PN} += "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/*"
+FILES:${PN} += "${DEPLOYDIR}/*"
