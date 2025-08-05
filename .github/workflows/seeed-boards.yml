@@ -522,13 +522,21 @@ jobs:
           if [ -d "${{ github.workspace }}/build/sstate-cache" ] && [ "$(ls -A ${{ github.workspace }}/build/sstate-cache)" ]; then
             if check_file_changes "sstate-cache" "${{ github.workspace }}/build/sstate-cache" "${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt"; then
               echo "Uploading sstate cache..."
-              tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
-              -C ${{ github.workspace }}/build/sstate-cache .
-              rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
-                seeed-storage:yocto-cache/balenaos-latest/${{ inputs.machine }}.sstate-cache.tar \
-                --update
-              rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
-              echo "sstate cache uploaded successfully"
+              if tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+                -C ${{ github.workspace }}/build/sstate-cache .; then
+                echo "sstate cache tarball created successfully"
+                if rclone copyto -P --stats 1m ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar \
+                  seeed-storage:yocto-cache/balenaos-latest/${{ inputs.machine }}.sstate-cache.tar \
+                  --update; then
+                  echo "sstate cache uploaded successfully"
+                else
+                  echo "⚠️ WARNING: Failed to upload sstate cache to remote storage"
+                  echo "This will not affect the build success, but may impact future build performance"
+                fi
+                rm -f ${{ github.workspace }}/build/${{ inputs.machine }}.sstate-cache.tar
+              else
+                echo "⚠️ WARNING: Failed to create sstate cache tarball"
+              fi
             else
               echo "Skipping sstate cache upload (insufficient changes)"
             fi
@@ -541,13 +549,21 @@ jobs:
           if [ -d "${{ github.workspace }}/build/downloads" ] && [ "$(ls -A ${{ github.workspace }}/build/downloads)" ]; then
             if check_file_changes "downloads" "${{ github.workspace }}/build/downloads" "${{ github.workspace }}/build/cache-tracking/downloads-initial.txt"; then
               echo "Uploading downloads cache..."
-              tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
-              -C ${{ github.workspace }}/build/downloads .
-              rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
-                seeed-storage:yocto-cache/balenaos-latest/yocto-download.tar \
-                --update
-              rm -f ${{ github.workspace }}/build/yocto-download.tar
-              echo "downloads cache uploaded successfully"
+              if tar --format=posix --sort=name --mtime=0 -cf ${{ github.workspace }}/build/yocto-download.tar \
+                -C ${{ github.workspace }}/build/downloads .; then
+                echo "downloads cache tarball created successfully"
+                if rclone copyto -P --stats 1m ${{ github.workspace }}/build/yocto-download.tar \
+                  seeed-storage:yocto-cache/balenaos-latest/yocto-download.tar \
+                  --update; then
+                  echo "downloads cache uploaded successfully"
+                else
+                  echo "⚠️ WARNING: Failed to upload downloads cache to remote storage"
+                  echo "This will not affect the build success, but may impact future build performance"
+                fi
+                rm -f ${{ github.workspace }}/build/yocto-download.tar
+              else
+                echo "⚠️ WARNING: Failed to create downloads cache tarball"
+              fi
             else
               echo "Skipping downloads cache upload (insufficient changes)"
             fi
@@ -555,7 +571,10 @@ jobs:
             echo "No downloads cache to upload"
           fi
           
+          echo "==============================================="
           echo "Cache upload process completed"
+          echo "Note: Cache upload failures are non-critical and will not affect build success"
+          echo "==============================================="
 
       - name: Build summary
         if: always()
