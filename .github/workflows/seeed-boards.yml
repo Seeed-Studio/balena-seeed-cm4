@@ -21,6 +21,8 @@ on:
         description: 'Target device to build'
         options:
           - seeed-recomputer-r100x
+          - seeed-reterminal
+          - seeed-reterminal-DM
         default: 'seeed-recomputer-r100x'
       build_type:
         type: choice
