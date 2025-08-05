@@ -100,14 +100,7 @@ jobs:
       - name: Maximize build space
         uses: easimon/maximize-build-space@master
         with:
-                            # 246 MB    (<none>)
-                            # 124 MB    (debian)
-                            # 1590 MB   (balena-yocto-scripts)
-                            # 163 MB    (balenalib/intel-nuc)
-                            # + 225 MB  (docker)
-                            # ---------
-                            # 2348 MB  ~ 2500 MB
-          root-reserve-mb: 2500 
+          root-reserve-mb: 4096
           swap-size-mb: 1024
           remove-dotnet: 'true'
           remove-android: 'true'
