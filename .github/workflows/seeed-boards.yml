@@ -21,6 +21,7 @@ on:
         description: 'Target device to build'
         options:
           - seeed-recomputer-r100x
+          - seeed-rerouter-cm4
           - seeed-reterminal
           - seeed-reterminal-DM
           - seeed-recomputer-r2x
