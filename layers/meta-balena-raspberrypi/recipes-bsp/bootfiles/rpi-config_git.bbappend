@@ -108,3 +108,47 @@ do_deploy:append:raspberrypi4() {
 otg_mode=1
 EOF
 }
+
+do_deploy:append:seeed-recomputer-r100x() {
+	# Use the Seeed reComputer R100x device tree overlay
+	echo "dtoverlay=reComputer-R100x" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable I2C overlays
+	echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
+}
+
+do_deploy:append:seeed-recomputer-r2x() {
+	# Use the Seeed reComputer R2x device tree overlay
+	echo "dtoverlay=reComputer-R2x" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable I2C overlays
+	echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
+	echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
+}
+
+do_deploy:append:seeed-reterminal() {
+	# Use the Seeed reTerminal device tree overlay
+	echo "dtoverlay=reTerminal" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable I2C3 overlay for reTerminal
+	echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable VC4 KMS overlay for display
+	echo "dtoverlay=vc4-kms-v3d-pi4" >> ${DEPLOYDIR}/bootfiles/config.txt
+}
+
+do_deploy:append:seeed-reterminal-DM() {
+	# Use the Seeed reTerminal DM device tree overlay
+	echo "dtoverlay=reTerminal-DM" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable I2C3 overlay for reTerminal DM
+	echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
+	# Enable VC4 KMS overlay for display
+	echo "dtoverlay=vc4-kms-v3d-pi4" >> ${DEPLOYDIR}/bootfiles/config.txt
+}
+
+do_deploy:append:seeed-rerouter-cm4() {
+	# Seeed reRouter CM4 board configuration
+	# Enable dual Gigabit Ethernet if needed
+	echo "dtparam=pciex1_gen=2" >> ${DEPLOYDIR}/bootfiles/config.txt
+}
