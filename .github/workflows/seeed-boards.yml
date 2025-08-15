@@ -136,7 +136,7 @@ jobs:
           }
           EOF
           sudo apparmor_parser -r /etc/apparmor.d/bitbake
-          
+
           
           # Set up shell
           sudo rm -f /bin/sh && sudo ln -s bash /bin/sh
@@ -756,8 +756,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     needs: build-balena-image
-    if: needs.build-balena-image.outputs.build-success == 'true'
-    
+    if: always() && needs.build-balena-image.result == 'success'
+
     steps:
       - name: Setup Rclone
         uses: AnimMouse/setup-rclone@v1
@@ -880,8 +880,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     needs: build-balena-image
-    if: needs.build-balena-image.outputs.build-success == 'true' && !inputs.disable_upload_downloads
-    
+    if: always() && needs.build-balena-image.result == 'success' && !inputs.disable_upload_downloads
+
     steps:
       - name: Setup Rclone
         uses: AnimMouse/setup-rclone@v1
