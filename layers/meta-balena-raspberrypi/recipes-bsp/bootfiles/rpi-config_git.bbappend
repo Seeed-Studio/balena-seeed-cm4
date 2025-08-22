@@ -44,10 +44,10 @@ do_deploy:append() {
 		# Use the Seeed reComputer R2x device tree overlay
 		echo "dtoverlay=reComputer-R2x" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C overlays
-		echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
-		echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
-		echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
-		echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
 	fi
 }
 
