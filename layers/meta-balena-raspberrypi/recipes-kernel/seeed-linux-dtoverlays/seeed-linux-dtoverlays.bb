@@ -22,6 +22,15 @@ S = "${WORKDIR}/git"
 INSANE_SKIP:${PN} = "file-rdeps"
 
 do_compile() {
+
+    # Check if the source file exists before renaming
+    if [ -f overlays/rpi/reComputer-R100x-overlay.dts ]; then
+        mv overlays/rpi/reComputer-R100x-overlay.dts overlays/rpi/reComputer-R100x-1.1-overlay.dts
+    else
+        echo "File overlays/rpi/reComputer-R100x-overlay.dts does not exist"
+        echo "Available .dts files in overlays/rpi/:"
+        find overlays/rpi/ -name "*.dts" 2>/dev/null || echo "No .dts files found"
+    fi
     oe_runmake \
         ARCH=${ARCH} \
         KBUILD=${STAGING_KERNEL_DIR} \
@@ -45,10 +54,6 @@ do_install() {
         for dtbo in overlays/rpi/*.dtbo; do
             if [ -f "$dtbo" ]; then
                 dtbo_name=$(basename "$dtbo")
-                # Skip reComputer-R100x.dtbo
-                if [ "$dtbo_name" = "reComputer-R100x.dtbo" ] || [ "$dtbo_name" = "reComputer-R100x-overlay.dtbo" ]; then
-                    continue
-                fi
                 # Remove '-overlay' suffix if present for standard naming
                 target_name=$(echo "$dtbo_name" | sed 's/-overlay\.dtbo$/.dtbo/')
                 install -m 0644 "$dtbo" "${D}${DEPLOYDIR}/$target_name"
@@ -63,10 +68,6 @@ do_deploy() {
         for dtbo in overlays/rpi/*.dtbo; do
             if [ -f "$dtbo" ]; then
                 dtbo_name=$(basename "$dtbo")
-                # Skip reComputer-R100x.dtbo
-                if [ "$dtbo_name" = "reComputer-R100x.dtbo" ] || [ "$dtbo_name" = "reComputer-R100x-overlay.dtbo" ]; then
-                    continue
-                fi
                 # Remove '-overlay' suffix if present for standard naming
                 target_name=$(echo "$dtbo_name" | sed 's/-overlay\.dtbo$/.dtbo/')
                 install -m 0644 "$dtbo" "${DEPLOYDIR}/$target_name"

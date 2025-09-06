@@ -33,8 +33,8 @@ do_deploy:append() {
 		# Enable dual Gigabit Ethernet if needed
 		echo "dtparam=pciex1_gen=2" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r100x" ]; then
-		# Use the Seeed reComputer R100x device tree overlay
-		echo "dtoverlay=reComputer-R100x" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# Use the Seeed reComputer R100x device tree overlay defaulting to v1.1
+		echo "dtoverlay=reComputer-R100x-1.1" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C overlays
 		echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
 		echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
