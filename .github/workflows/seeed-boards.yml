@@ -634,7 +634,7 @@ jobs:
           retention-days: 30
 
       - name: Upload release assets
-        if: steps.build_step.outputs.build-success == 'true' && inputs.tag_name != ''
+        if: steps.build_step.outcome == 'success' && inputs.tag_name != ''
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
