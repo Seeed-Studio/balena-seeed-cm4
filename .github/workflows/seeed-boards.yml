@@ -42,6 +42,10 @@ on:
         type: boolean
         description: 'Clean build (ignore sstate cache)'
         default: false
+      tag_name:
+        description: "Release tag name"
+        required: false
+        default: ''
 
 env:
   LANG: "en_US.UTF-8"
@@ -628,6 +632,21 @@ jobs:
           name: balena-${{ inputs.machine }}-${{ steps.build_info.outputs.BUILD_ID }}
           path: ${{ github.workspace }}/release/
           retention-days: 30
+
+      - name: Upload release assets
+        if: steps.build_step.outputs.build-success == 'true' && inputs.tag_name != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ls ${{ github.workspace }}/release/* >/dev/null 2>&1; then
+            echo "Uploading release assets to GitHub Release..."
+            tar --format=posix --sort=name --mtime=0 -czf ${{ github.workspace }}/${{ inputs.machine }}-image.tar.gz -C ${{ github.workspace }}/release .
+            gh release upload ${{ inputs.tag_name }} ${{ github.workspace }}/${{ inputs.machine }}-image.tar.gz --clobber --repo ${{ github.repository }}
+            echo "Release assets uploaded successfully"
+          else
+            echo "No release files found to upload"
+          fi
 
       - name: Prepare updated sstate cache for upload
         if: steps.build_step.outcome == 'success'
