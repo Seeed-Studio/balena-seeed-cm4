@@ -1,17 +1,19 @@
 do_deploy:append() {
-    # Enable i2c by default
-    echo "dtparam=i2c_arm=on" >>${DEPLOYDIR}/bootfiles/config.txt
-    # Enable SPI by default
-    echo "dtparam=spi=on" >>${DEPLOYDIR}/bootfiles/config.txt
     # Disable firmware splash by default
     echo "disable_splash=1" >>${DEPLOYDIR}/bootfiles/config.txt
+
+    # Enable audio (loads snd_bcm2835)
+    echo "dtparam=audio=on" >> ${DEPLOYDIR}/bootfiles/config.txt
+
     # Disable firmware warnings showing in non-debug images
     if ! ${@bb.utils.contains('DISTRO_FEATURES','osdev-image','true','false',d)}; then
         echo "avoid_warnings=1" >>${DEPLOYDIR}/bootfiles/config.txt
     fi
-    # Enable audio (loads snd_bcm2835)
-    echo "dtparam=audio=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 
+    if ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r2x', 'true', 'false', d)} \
+        && ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r22', 'true', 'false', d)} ; then
+        echo "dtparam=spi=on" >> ${DEPLOYDIR}/bootfiles/config.txt
+    fi
 
 	# Device-specific configurations
 	if [ "${MACHINE}" = "seeed-reterminal-DM" ]; then
@@ -34,6 +36,7 @@ do_deploy:append() {
 		echo "dtparam=pciex1_gen=2" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r100x" ]; then
 		# Use the Seeed reComputer R100x device tree overlay defaulting to v1.1
+        echo "dtparam=i2c_arm=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 		echo "dtoverlay=reComputer-R100x-1.1" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C overlays
 		# echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
@@ -42,6 +45,7 @@ do_deploy:append() {
 		# echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r110x" ]; then
 		# Use the Seeed reComputer R110x device tree overlay v1.0
+        echo "dtparam=i2c_arm=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 		echo "dtoverlay=reComputer-R110x" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r2x" ]; then
 		# Use the Seeed reComputer R2x device tree overlay
