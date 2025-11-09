@@ -5,6 +5,8 @@ do_deploy:append() {
     # Enable audio (loads snd_bcm2835)
     echo "dtparam=audio=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 
+	echo "dtoverlay=dwc2,dr_mode=host" >> ${DEPLOYDIR}/bootfiles/config.txt
+
     # Disable firmware warnings showing in non-debug images
     if ! ${@bb.utils.contains('DISTRO_FEATURES','osdev-image','true','false',d)}; then
         echo "avoid_warnings=1" >>${DEPLOYDIR}/bootfiles/config.txt
