@@ -51,7 +51,7 @@ do_deploy:append() {
 		echo "dtoverlay=reComputer-R110x" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r2x" ]; then
 		# Use the Seeed reComputer R2x device tree overlay
-		echo "dtoverlay=reComputer-R2x" >> ${DEPLOYDIR}/bootfiles/config.txt
+		echo "dtoverlay=reComputer-R2x-base" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C overlays
 		# echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# echo "dtoverlay=i2c1" >> ${DEPLOYDIR}/bootfiles/config.txt
