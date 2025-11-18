@@ -25,6 +25,10 @@ do_deploy:append() {
 		echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable VC4 KMS overlay for display
 		echo "dtoverlay=vc4-kms-v3d-pi4" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# Enable I2S for audio
+		echo "dtparam=i2s=on" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# Enable I2C_VC for touch
+		echo "dtparam=i2c_vc=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-reterminal" ]; then
 		# Use the Seeed reTerminal device tree overlay
 		echo "dtoverlay=reTerminal" >> ${DEPLOYDIR}/bootfiles/config.txt
