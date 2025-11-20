@@ -8,7 +8,7 @@ CM4IOB_WRITE_BOOT="Disconnect the power source and eMMC boot jumper if using the
 
 module.exports =
 	version: 1
-	slug: 'seeed-rerouter-cm4'
+	slug: 'raspberrypi4-64'
 	aliases: [ 'seeed-rerouter-cm4' ]
 	name: 'Seeed reRouter CM4 Board'
 	arch: 'aarch64'
