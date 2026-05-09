@@ -95,7 +95,7 @@ jobs:
 
       - name: Upload sstate cache artifact
         if: steps.cache_check.outputs.cache-available == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sstate-cache-${{ inputs.machine }}
           path: ${{ github.workspace }}/${{ inputs.machine }}.sstate-cache.tar
@@ -111,7 +111,7 @@ jobs:
     steps:
       - name: Checkout repository for fetchall
         if: ${{ inputs.clean_build }}
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
@@ -211,7 +211,7 @@ jobs:
 
       - name: Upload downloads cache artifact
         if: steps.downloads_check.outputs.downloads-available == 'true' || steps.fetchall_check.outputs.downloads-available == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: downloads-cache
           path: ${{ github.workspace }}/yocto-download.tar
@@ -279,7 +279,7 @@ jobs:
           remove-codeql: 'true'
           remove-docker-images: 'true'
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
           fetch-depth: 0
@@ -361,7 +361,7 @@ jobs:
           
       - name: Download sstate cache artifact
         if: ${{ !inputs.clean_build && needs.download-sstate-cache.outputs.cache-available == 'true' }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: sstate-cache-${{ inputs.machine }}
           path: ${{ github.workspace }}/cache-temp/
@@ -380,7 +380,7 @@ jobs:
 
       - name: Download downloads cache artifact
         if: ${{ needs.download-shared-cache.outputs.downloads-available == 'true' }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: downloads-cache
           path: ${{ github.workspace }}/cache-temp/
@@ -410,14 +410,14 @@ jobs:
 
       - name: Delete sstate cache artifact
         if: ${{ !inputs.clean_build && needs.download-sstate-cache.outputs.cache-available == 'true' }}
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: sstate-cache-${{ inputs.machine }}
         continue-on-error: true
 
       - name: Delete downloads cache artifact
         if: ${{ needs.download-shared-cache.outputs.downloads-available == 'true' }}
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: downloads-cache
         continue-on-error: true
@@ -506,7 +506,7 @@ jobs:
 
           
           # Run the build
-          ./balena-yocto-scripts/build/barys --dry-run
+          ./balena-yocto-scripts/build/barys --dry-run $BUILD_OPTIONS
           source layers/poky/oe-init-build-env
 
           # Run bitbake with error handling
@@ -628,7 +628,7 @@ jobs:
 
       - name: Upload artifacts as build artifacts
         if: steps.build_step.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: balena-${{ inputs.machine }}-${{ steps.build_info.outputs.BUILD_ID }}
           path: ${{ github.workspace }}/release/
@@ -652,6 +652,10 @@ jobs:
       - name: Prepare updated sstate cache for upload
         if: steps.build_step.outcome == 'success'
         run: |
+          # Copy initial tracking file to workspace root for upload job
+          cp ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt \
+            ${{ github.workspace }}/sstate-cache-initial.txt
+
           echo "Preparing sstate cache for upload..."
           
           # Clean up sstate cache before packaging
@@ -716,18 +720,22 @@ jobs:
 
       - name: Upload updated sstate cache for upload job
         if: steps.build_step.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: updated-sstate-cache-${{ inputs.machine }}-${{ steps.build_info.outputs.BUILD_ID }}
           path: |
             ${{ github.workspace }}/updated-${{ inputs.machine }}.sstate-cache.tar
-            ${{ github.workspace }}/build/cache-tracking/sstate-cache-initial.txt
+            ${{ github.workspace }}/sstate-cache-initial.txt
           retention-days: 1
           if-no-files-found: ignore
 
       - name: Prepare updated downloads cache for upload
         if: steps.build_step.outcome == 'success' && !inputs.disable_upload_downloads
         run: |
+          # Copy initial tracking file to workspace root for upload job
+          cp ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt \
+            ${{ github.workspace }}/downloads-initial.txt
+
           echo "Preparing downloads cache for upload..."
           if [ -d "${{ github.workspace }}/build/downloads" ] && [ "$(ls -A ${{ github.workspace }}/build/downloads)" ]; then
             # Create tar archive of updated downloads cache
@@ -740,12 +748,12 @@ jobs:
 
       - name: Upload updated downloads cache for upload job
         if: steps.build_step.outcome == 'success' && !inputs.disable_upload_downloads
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: updated-downloads-cache-${{ steps.build_info.outputs.BUILD_ID }}
           path: |
             ${{ github.workspace }}/updated-yocto-download.tar
-            ${{ github.workspace }}/build/cache-tracking/downloads-initial.txt
+            ${{ github.workspace }}/downloads-initial.txt
           retention-days: 1
           if-no-files-found: ignore
 
@@ -787,7 +795,7 @@ jobs:
           rclone_config: ${{ secrets.RCLONE_CONFIG }}
 
       - name: Download updated sstate cache
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: updated-sstate-cache-${{ needs.build-balena-image.outputs.machine }}-${{ needs.build-balena-image.outputs.build-id }}
           path: ${{ github.workspace }}/
@@ -891,7 +899,7 @@ jobs:
           echo "==============================================="
 
       - name: Delete updated sstate cache artifact
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: updated-sstate-cache-${{ needs.build-balena-image.outputs.machine }}-${{ needs.build-balena-image.outputs.build-id }}
         continue-on-error: true
@@ -911,7 +919,7 @@ jobs:
           rclone_config: ${{ secrets.RCLONE_CONFIG }}
 
       - name: Download updated downloads cache
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: updated-downloads-cache-${{ needs.build-balena-image.outputs.build-id }}
           path: ${{ github.workspace }}/
@@ -1013,7 +1021,7 @@ jobs:
           echo "==============================================="
 
       - name: Delete updated downloads cache artifact
-        uses: geekyeggo/delete-artifact@v5
+        uses: geekyeggo/delete-artifact@v6
         with:
           name: updated-downloads-cache-${{ needs.build-balena-image.outputs.build-id }}
         continue-on-error: true
