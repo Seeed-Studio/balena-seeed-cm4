@@ -16,7 +16,7 @@ on:
           - seeed-reterminal-DM
           - seeed-recomputer-r2x
           - seeed-recomputer-r22
-        default: all
+        default: seeed-recomputer-r100x
       build_type:
         description: Image type
         required: true
