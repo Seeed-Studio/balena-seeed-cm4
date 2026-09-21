@@ -136,6 +136,10 @@ jobs:
           df -h /
 
       - name: Build balenaOS image
+        # Cap below the 360 min job maximum so the sstate banking steps
+        # below run in a live job instead of the post-cancellation
+        # grace window (mirrors meta-seeed-cm4 fix/ci).
+        timeout-minutes: 330
         env:
           BALENA_DEVICE_TYPE: ${{ matrix.machine }}
         run: |
@@ -158,6 +162,7 @@ jobs:
           retention-days: 14
 
       - name: Prepare updated sstate cache
+        if: always()
         run: |
           if [ -f layers/poky/scripts/sstate-cache-management.py ]; then
             if [ -d build/tmp/stamps ]; then
@@ -185,6 +190,7 @@ jobs:
           df -h /
 
       - name: Upload sstate cache
+        if: always()
         run: |
           if [ -f "updated-${{ matrix.machine }}.sstate-cache.tar" ]; then
             rclone copyto -P --stats 1m \
