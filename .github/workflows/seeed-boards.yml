@@ -30,11 +30,6 @@ on:
         required: false
         type: string
         default: ''
-      disable_upload_downloads:
-        description: Disable uploading the shared downloads cache after single-machine builds
-        required: false
-        type: boolean
-        default: true
 
 concurrency:
   group: balena-${{ github.workflow }}-${{ github.ref }}
@@ -48,8 +43,6 @@ jobs:
   build:
     name: ${{ matrix.machine }}
     runs-on: ubuntu-24.04
-    # Cold full builds on the 4-vCPU public runner can take several hours;
-    # 360 min is the GitHub Actions job maximum.
     timeout-minutes: 360
     permissions:
       contents: write
@@ -99,46 +92,19 @@ jobs:
         run: |
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
-      - name: Setup Rclone
-        uses: AnimMouse/setup-rclone@v1
+      - name: Restore Yocto sstate cache
+        uses: actions/cache/restore@v4
         with:
-          version: v1.67.0
-          rclone_config: ${{ secrets.RCLONE_CONFIG }}
-
-      - name: Download sstate cache
-        run: |
-          rclone copy -P --stats 1m \
-            "seeed-storage:yocto-cache/balenaos-latest/${{ matrix.machine }}.sstate-cache.tar" . \
-            --transfers 8 --checkers 8 --fast-list --ignore-existing || true
-          if [ -f "${{ matrix.machine }}.sstate-cache.tar" ]; then
-            mkdir -p build/sstate-cache
-            tar --no-same-owner -xf "${{ matrix.machine }}.sstate-cache.tar" -C build/sstate-cache
-            rm -f "${{ matrix.machine }}.sstate-cache.tar"
-            echo "sstate cache restored for ${{ matrix.machine }}"
-          else
-            echo "no sstate cache for ${{ matrix.machine }}, cold build"
-          fi
-          df -h /
-
-      - name: Download shared downloads cache
-        run: |
-          rclone copy -P --stats 1m \
-            "seeed-storage:yocto-cache/balenaos-latest/yocto-download.tar" . \
-            --transfers 8 --checkers 8 --fast-list --ignore-existing || true
-          if [ -f yocto-download.tar ]; then
-            mkdir -p build/downloads
-            tar --no-same-owner -xf yocto-download.tar -C build/downloads
-            rm -f yocto-download.tar
-            echo "downloads cache restored"
-          else
-            echo "no shared downloads cache"
-          fi
-          df -h /
+          path: build/sstate-cache
+          key: balena-${{ matrix.machine }}-sstate-${{ github.sha }}
+          restore-keys: |
+            balena-${{ matrix.machine }}-sstate-
 
       - name: Build balenaOS image
         # Cap below the 360 min job maximum so the sstate banking steps
         # below run in a live job instead of the post-cancellation
-        # grace window (mirrors meta-seeed-cm4 fix/ci).
+        # grace window. A cold build may hit this on purpose: the sstate
+        # saved below lets the next run converge.
         timeout-minutes: 330
         env:
           BALENA_DEVICE_TYPE: ${{ matrix.machine }}
@@ -161,7 +127,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Prepare updated sstate cache
+      - name: Prepare sstate cache for save
+        # Shrink below the 10 GiB per-cache limit before saving; runs even
+        # on failure/budget-stop so partial progress is banked.
         if: always()
         run: |
           if [ -f layers/poky/scripts/sstate-cache-management.py ]; then
@@ -178,53 +146,16 @@ jobs:
           else
             echo "sstate-cache-management.py not found, skipping cleanup"
           fi
-          rm -rf build/tmp/work
-          if [ -d build/sstate-cache ] && [ -n "$(ls -A build/sstate-cache)" ]; then
-            tar --format=posix --sort=name --mtime=0 -cf \
-              "updated-${{ matrix.machine }}.sstate-cache.tar" \
-              -C build/sstate-cache .
-            ls -lh "updated-${{ matrix.machine }}.sstate-cache.tar"
-          else
-            echo "no sstate cache to upload"
-          fi
+          rm -rf build/tmp/work 2>/dev/null || true
+          du -sh build/sstate-cache || true
           df -h /
 
-      - name: Upload sstate cache
+      - name: Save Yocto sstate cache
         if: always()
-        run: |
-          if [ -f "updated-${{ matrix.machine }}.sstate-cache.tar" ]; then
-            rclone copyto -P --stats 1m \
-              "updated-${{ matrix.machine }}.sstate-cache.tar" \
-              "seeed-storage:yocto-cache/balenaos-latest/${{ matrix.machine }}.sstate-cache.tar" \
-              --update
-            echo "sstate cache uploaded for ${{ matrix.machine }}"
-          else
-            echo "no sstate cache file to upload"
-          fi
-
-      - name: Prepare updated downloads cache
-        if: ${{ !inputs.disable_upload_downloads && inputs.machine != 'all' }}
-        run: |
-          if [ -d build/downloads ] && [ -n "$(ls -A build/downloads)" ]; then
-            tar --format=posix --sort=name --mtime=0 -cf updated-yocto-download.tar \
-              -C build/downloads .
-            ls -lh updated-yocto-download.tar
-            df -h /
-          else
-            echo "no downloads to upload"
-          fi
-
-      - name: Upload downloads cache
-        if: ${{ !inputs.disable_upload_downloads && inputs.machine != 'all' }}
-        run: |
-          if [ -f updated-yocto-download.tar ]; then
-            rclone copyto -P --stats 1m updated-yocto-download.tar \
-              "seeed-storage:yocto-cache/balenaos-latest/yocto-download.tar" \
-              --update
-            echo "downloads cache uploaded"
-          else
-            echo "no downloads file to upload"
-          fi
+        uses: actions/cache/save@v4
+        with:
+          path: build/sstate-cache
+          key: balena-${{ matrix.machine }}-sstate-${{ github.sha }}
 
       - name: Upload release assets
         if: ${{ inputs.tag_name != '' }}
