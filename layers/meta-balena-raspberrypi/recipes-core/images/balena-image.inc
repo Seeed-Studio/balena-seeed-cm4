@@ -20,15 +20,8 @@ IMAGE_ROOTFS_SIZE:raspberrypi5="655360"
 BALENA_BOOT_SIZE:raspberrypi5="81920"
 
 # Increase Root File system size
-IMAGE_ROOTFS_SIZE:revpi-connect-s ?= "319488"
-IMAGE_OVERHEAD_FACTOR:revpi-connect-s ?= "1.0"
-IMAGE_ROOTFS_EXTRA_SPACE:revpi-connect-s ?= "53248"
-IMAGE_ROOTFS_MAXSIZE:revpi-connect-s ?= "372736"
-
-IMAGE_ROOTFS_SIZE:revpi-connect-4 ?= "319488"
-IMAGE_OVERHEAD_FACTOR:revpi-connect-4 ?= "1.0"
-IMAGE_ROOTFS_EXTRA_SPACE:revpi-connect-4 ?= "53248"
-IMAGE_ROOTFS_MAXSIZE:revpi-connect-4 ?= "372736"
+IMAGE_ROOTFS_SIZE:revpi-connect-s = "372736"
+IMAGE_ROOTFS_SIZE:revpi-connect-4 = "372736"
 
 # Customize balenaos-img
 BALENA_IMAGE_BOOTLOADER:rpi = "rpi-bootfiles"
@@ -47,10 +40,6 @@ BALENA_BOOT_PARTITION_FILES:append:raspberrypi5 = " \
     balena-bootloader/${KERNEL_IMAGETYPE}-initramfs-${MACHINE}.bin:/${SDIMG_KERNELIMAGE} \
     balena-bootloader/bootenv:/bootenv \
     "
-
-BALENA_BOOT_PARTITION_FILES:append:revpi-core-3 = " revpi-core-dt-blob-overlay.dtb:/dt-blob.bin"
-
-BALENA_BOOT_PARTITION_FILES:append:revpi-connect = " revpi-connect-dt-blob-overlay.dtb:/dt-blob.bin"
 
 BALENA_BOOT_PARTITION_FILES:append:revpi-connect-s = " revpi-connect-dt-blob-overlay.dtb:/dt-blob.bin"
 
@@ -103,6 +92,56 @@ IMAGE_INSTALL:append:raspberrypi4-superhub = " \
 "
 
 BALENA_BOOT_PARTITION_FILES:append:raspberrypi4-64 = " \
-    rpi-eeprom/pieeprom-latest-stable.bin:/pieeprom-latest-stable.bin \
+    rpi-eeprom/pieeprom.upd:/pieeprom.upd \
+    rpi-eeprom/pieeprom.sig:/pieeprom.sig \
     rpi-eeprom/vl805-latest-stable.bin:/vl805-latest-stable.bin \
 "
+
+IMAGE_ROOTFS_SIZE:npe-x500-m3 = "327680"
+BALENA_BOOT_SIZE:npe-x500-m3 = "40960"
+BALENA_STATE_SIZE:npe-x500-m3 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi = "327680"
+BALENA_BOOT_SIZE:raspberrypi = "40960"
+BALENA_STATE_SIZE:raspberrypi = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi0-2w-64 = "327680"
+BALENA_BOOT_SIZE:raspberrypi0-2w-64 = "40960"
+BALENA_STATE_SIZE:raspberrypi0-2w-64 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi2 = "327680"
+BALENA_BOOT_SIZE:raspberrypi2 = "40960"
+BALENA_STATE_SIZE:raspberrypi2 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi3-64 = "327680"
+BALENA_BOOT_SIZE:raspberrypi3-64 = "40960"
+BALENA_STATE_SIZE:raspberrypi3-64 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi3-unipi-neuron = "327680"
+BALENA_BOOT_SIZE:raspberrypi3-unipi-neuron = "40960"
+BALENA_STATE_SIZE:raspberrypi3-unipi-neuron = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi3 = "327680"
+BALENA_BOOT_SIZE:raspberrypi3 = "40960"
+BALENA_STATE_SIZE:raspberrypi3 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi4-64 = "327680"
+BALENA_BOOT_SIZE:raspberrypi4-64 = "40960"
+BALENA_STATE_SIZE:raspberrypi4-64 = "20480"
+BALENA_BOOT_SIZE:raspberrypi4-superhub = "40960"
+BALENA_STATE_SIZE:raspberrypi4-superhub = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi4-unipi-neuron = "327680"
+BALENA_BOOT_SIZE:raspberrypi4-unipi-neuron = "40960"
+BALENA_STATE_SIZE:raspberrypi4-unipi-neuron = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypi400-64 = "327680"
+BALENA_BOOT_SIZE:raspberrypi400-64 = "40960"
+BALENA_STATE_SIZE:raspberrypi400-64 = "20480"
+BALENA_STATE_SIZE:raspberrypi5 = "20480"
+IMAGE_ROOTFS_SIZE:raspberrypicm4-ioboard = "327680"
+BALENA_BOOT_SIZE:raspberrypicm4-ioboard = "40960"
+# meta-balena-rpi-sb adds ":sb" to MACHINEOVERRIDES when it's in the build,
+# so these compound overrides win over both the plain ones above and the
+# inherited raspberrypi4-64 override for the secure-boot variant.
+IMAGE_ROOTFS_SIZE:raspberrypicm4-ioboard:sb = "655360"
+BALENA_BOOT_SIZE:raspberrypicm4-ioboard:sb = "174080"
+BALENA_STATE_SIZE:raspberrypicm4-ioboard = "20480"
+BALENA_BOOT_SIZE:revpi-connect-4 = "40960"
+BALENA_STATE_SIZE:revpi-connect-4 = "20480"
+BALENA_BOOT_SIZE:revpi-connect-s = "40960"
+BALENA_STATE_SIZE:revpi-connect-s = "20480"
+IMAGE_ROOTFS_SIZE:rt-rpi-300 = "327680"
+BALENA_BOOT_SIZE:rt-rpi-300 = "40960"
+BALENA_STATE_SIZE:rt-rpi-300 = "20480"

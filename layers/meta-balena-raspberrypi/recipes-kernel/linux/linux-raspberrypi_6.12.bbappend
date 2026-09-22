@@ -21,147 +21,10 @@ SRC_URI:append = " \
 	file://0001-waveshare-sim7600-Add-dtbo-for-this-modem.patch \
 	file://0001-overlays-Add-overlay-for-Seeed-reComputer-R1000.patch \
 	file://0001-overlays-Add-overlay-for-RPI-PLC-SC16IS752.patch \
+	file://0010-dts-overlays-Add-UniPi-overlays.patch \
 "
 
-BALENA_CONFIGS:append = " fbtft"
-BALENA_CONFIGS[fbtft] = " \
-    CONFIG_STAGING=y \
-    CONFIG_FB_TFT=m \
-    CONFIG_FB_TFT_AGM1264K_FL=m \
-    CONFIG_FB_TFT_BD663474=m \
-    CONFIG_FB_TFT_HX8340BN=m \
-    CONFIG_FB_TFT_HX8347D=m \
-    CONFIG_FB_TFT_HX8353D=m \
-    CONFIG_FB_TFT_ILI9163=m \
-    CONFIG_FB_TFT_ILI9320=m \
-    CONFIG_FB_TFT_ILI9325=m \
-    CONFIG_FB_TFT_ILI9340=m \
-    CONFIG_FB_TFT_ILI9341=m \
-    CONFIG_FB_TFT_ILI9481=m \
-    CONFIG_FB_TFT_ILI9486=m \
-    CONFIG_FB_TFT_PCD8544=m \
-    CONFIG_FB_TFT_RA8875=m \
-    CONFIG_FB_TFT_S6D02A1=m \
-    CONFIG_FB_TFT_S6D1121=m \
-    CONFIG_FB_TFT_SSD1289=m \
-    CONFIG_FB_TFT_SSD1306=m \
-    CONFIG_FB_TFT_SSD1331=m \
-    CONFIG_FB_TFT_SSD1351=m \
-    CONFIG_FB_TFT_ST7735R=m \
-    CONFIG_FB_TFT_TINYLCD=m \
-    CONFIG_FB_TFT_TLS8204=m \
-    CONFIG_FB_TFT_UC1701=m \
-    CONFIG_FB_TFT_UPD161704=m \
-    "
-
-
-BALENA_CONFIGS:append = " ${@configure_from_version("5.17", "", " fb_tft_watterott", d)}"
-BALENA_CONFIGS[fb_tft_watterott] = "CONFIG_FB_TFT_WATTEROTT=m"
-
-BALENA_CONFIGS:append = " pca955_gpio_expander"
-BALENA_CONFIGS[pca955_gpio_expander] = " \
-    CONFIG_GPIO_PCA953X=y \
-    CONFIG_GPIO_PCA953X_IRQ=y \
-    "
-
-# requested by customer (support for Kontron PLD devices)
-BALENA_CONFIGS:append = " gpio_i2c_kempld"
-BALENA_CONFIGS_DEPS[gpio_i2c_kempld] = " \
-    CONFIG_GPIOLIB=y \
-    CONFIG_I2C=y \
-    CONFIG_HAS_IOMEM=y \
-    CONFIG_MFD_KEMPLD=m \
-"
-BALENA_CONFIGS[gpio_i2c_kempld] = " \
-    CONFIG_GPIO_KEMPLD=m \
-    CONFIG_I2C_KEMPLD=m \
-"
-
-# make sure watchdog gets enabled no matter of the BSP changes
-BALENA_CONFIGS:append = " rpi_watchdog"
-BALENA_CONFIGS_DEPS[rpi_watchdog] = " \
-    CONFIG_WATCHDOG=y \
-"
-BALENA_CONFIGS[rpi_watchdog] = " \
-    CONFIG_BCM2835_WDT=y \
-"
-
-BALENA_CONFIGS:append = " kvaser_usb_can_driver"
-
-BALENA_CONFIGS[kvaser_usb_can_driver] = " \
-    CONFIG_CAN_KVASER_USB=m \
-"
-
-BALENA_CONFIGS:append = " mcp251x_can_driver"
-
-BALENA_CONFIGS[mcp251x_can_driver] = " \
-    CONFIG_CAN_MCP251X=m \
-"
-
-BALENA_CONFIGS_DEPS[mcp251x_can_driver] = " \
-    CONFIG_SPI=y \
-    CONFIG_HAS_DMA=y \
-"
-
-BALENA_CONFIGS:append = " can_calc_bittiming"
-
-BALENA_CONFIGS[can_calc_bittiming] = " \
-		CONFIG_CAN_CALC_BITTIMING=y \
-"
-
-BALENA_CONFIGS_DEPS[can_calc_bittiming] = " \
-		CONFIG_CAN_DEV=y \
-"
-
-BALENA_CONFIGS:append = " ds1307_rtc_driver"
-
-BALENA_CONFIGS[ds1307_rtc_driver] = " \
-    CONFIG_RTC_DRV_DS1307=m \
-"
-
-BALENA_CONFIGS_DEPS[ds1307_rtc_driver] = " \
-    CONFIG_I2C=y \
-"
-
-BALENA_CONFIGS:append = " sc16is7xx_serial_driver"
-
-BALENA_CONFIGS[sc16is7xx_serial_driver] = " \
-    CONFIG_SERIAL_SC16IS7XX=m \
-"
-
-BALENA_CONFIGS_DEPS[sc16is7xx_serial_driver] = " \
-    CONFIG_I2C=y \
-"
-
-BALENA_CONFIGS:append = " mcp3422_adc_driver"
-
-BALENA_CONFIGS[mcp3422_adc_driver] = " \
-    CONFIG_MCP3422=m \
-"
-
-BALENA_CONFIGS_DEPS[mcp3422_adc_driver] = " \
-    CONFIG_I2C=y \
-"
-
-BALENA_CONFIGS:append = " sd8787_pwrseq_driver"
-
-BALENA_CONFIGS[sd8787_pwrseq_driver] = " \
-    CONFIG_PWRSEQ_SD8787=m \
-"
-
-BALENA_CONFIGS_DEPS[sd8787_pwrseq_driver] = " \
-    CONFIG_OF=y \
-"
-
-BALENA_CONFIGS:append = " serial_8250"
-BALENA_CONFIGS[serial_8250] = " \
-    CONFIG_SERIAL_8250=y \
-    CONFIG_SERIAL_8250_CONSOLE=y \
-    CONFIG_SERIAL_8250_NR_UARTS=1 \
-    CONFIG_SERIAL_8250_EXTENDED=y \
-    CONFIG_SERIAL_8250_SHARE_IRQ=y \
-    CONFIG_SERIAL_8250_BCM2835AUX=y \
-"
+SRC_URI:remove:raspberrypi = "file://0010-dts-overlays-Add-UniPi-overlays.patch"
 
 # The Pi3-64 and Pi4-64 are the only boards very low on rootfs space for now
 # so we add this as per https://github.com/balena-os/meta-balena/pull/2411
@@ -171,9 +34,30 @@ BALENA_CONFIGS[optimize-size] = " \
     CONFIG_CC_OPTIMIZE_FOR_SIZE=y \
 "
 
-BALENA_CONFIGS:append = " iio_pressure_drivers"
-BALENA_CONFIGS[iio_pressure_drivers] = " \
-    CONFIG_BMP280=m \
+# Enable the kernel interfaces required by the Exein "lite" runtime.
+# fanotify (with access-permission decisions) provides filesystem monitoring,
+# and the netlink connector's process-event reporting feeds process tracking.
+# Note: CONFIG_PROC_EVENTS depends on CONNECTOR=y, so CONNECTOR has to be
+# built in rather than a module. FANOTIFY's and CONNECTOR's own prerequisites
+# (FSNOTIFY, NET) are already =y in the bcm2709/bcm2711 defconfigs.
+BALENA_CONFIGS:append:raspberrypi3 = " exein-lite"
+BALENA_CONFIGS:append:raspberrypi4-64 = " exein-lite"
+BALENA_CONFIGS[exein-lite] = " \
+    CONFIG_FANOTIFY=y \
+    CONFIG_FANOTIFY_ACCESS_PERMISSIONS=y \
+    CONFIG_CONNECTOR=y \
+    CONFIG_PROC_EVENTS=y \
+"
+
+# Since kernel 6.12 the renesas family of PCIe/xHCI controllers needs
+# a new xhci_pci_renesas driver and doesn't work with just xhci_pci as before.
+# The driver is built as a module by default, but we want the board to be able
+# to boot from USB3 devices plugged through it, so we want the driver built-in.
+# Only relevant for devices with a PCIe port.
+BALENA_CONFIGS:append:raspberrypicm4-ioboard = " xhci_renesas"
+BALENA_CONFIGS:append:raspberrypi5 = " xhci_renesas"
+BALENA_CONFIGS[xhci_renesas] = " \
+    CONFIG_USB_XHCI_PCI_RENESAS=y \
 "
 
 # Fix dtbo loading on 64bits,
