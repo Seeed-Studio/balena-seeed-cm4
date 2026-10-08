@@ -121,6 +121,11 @@ BALENA_STATE_SIZE:raspberrypi3 = "20480"
 IMAGE_ROOTFS_SIZE:raspberrypi4-64 = "327680"
 BALENA_BOOT_SIZE:raspberrypi4-64 = "40960"
 BALENA_STATE_SIZE:raspberrypi4-64 = "20480"
+# The kernel bundle (~70MiB with initramfs) is staged on the boot partition
+# for the self-contained rpi-u-boot-scr boot flow, so the default 40MiB is
+# not enough (the FAT layout needs room for atomic copies of the largest
+# file on top of the data itself).
+BALENA_BOOT_SIZE:seeed-recomputer-r100x = "163840"
 BALENA_BOOT_SIZE:raspberrypi4-superhub = "40960"
 BALENA_STATE_SIZE:raspberrypi4-superhub = "20480"
 IMAGE_ROOTFS_SIZE:raspberrypi4-unipi-neuron = "327680"
