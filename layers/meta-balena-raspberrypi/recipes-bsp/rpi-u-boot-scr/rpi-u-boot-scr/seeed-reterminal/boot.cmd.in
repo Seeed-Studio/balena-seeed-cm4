@@ -1,0 +1,13 @@
+# Self-contained boot flow for Seeed reComputer-R100x (CM4).
+# The kernel bundle (Image + bundled initramfs) is staged on the FAT boot
+# partition as /Image by the machine configuration. The firmware has already
+# loaded the DTB with the config.txt overlays applied, which u-boot exposes
+# at ${fdtcontroladdr}. This flow deliberately avoids the resin environment
+# machinery so it works with an unpatched u-boot from OE-core.
+mmc dev 0
+# Load at a 2MB-aligned address in upper memory: the 6.12 kernel fails to
+# come up when u-boot relocates it from the low kernel_addr_r (0x80000).
+load mmc 0:1 0x10000000 /Image
+setenv bootargs earlycon=pl011,mmio32,0xfe201000 console=ttyAMA0,115200 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait net.ifnames=0 cgroup_enable=memory
+fdt addr ${fdtcontroladdr}
+booti 0x10000000 - ${fdtcontroladdr}

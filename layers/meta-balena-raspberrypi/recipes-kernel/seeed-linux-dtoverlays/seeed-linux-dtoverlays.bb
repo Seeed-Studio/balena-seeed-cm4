@@ -3,7 +3,7 @@ DESCRIPTION = "include all the device dtoverlay of reterminal"
 HOMEPAGE = "https://github.com/Seeed-Studio/seeed-linux-dtoverlays"
 
 LICENSE = "GPL-2.0-only"
-LIC_FILES_CHKSUM = "file://${WORKDIR}/git/COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
+LIC_FILES_CHKSUM = "file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814"
 
 inherit linux-kernel-base module-base deploy
 
@@ -17,11 +17,37 @@ SRC_URI = "git://github.com/Seeed-Studio/seeed-linux-dtoverlays.git;protocol=htt
 
 DEPENDS += " dtc-native"
 
-S = "${WORKDIR}/git"
 
-INSANE_SKIP:${PN} = "file-rdeps"
+INSANE_SKIP:${PN} = "file-rdeps buildpaths"
 
 do_compile() {
+
+    # The R110x overlay's sdhost fragments (SD card slot on GPIO 22-27)
+    # kill the 6.12 kernel before earlycon on CM4 boards: the serial
+    # console stays silent right after "Starting kernel ..." and the
+    # device looks completely dead. Drop the fragments and their
+    # overrides; the slot is non-essential (OS boots from eMMC).
+    python3 - <<'PYEOF'
+p = "overlays/rpi/reComputer-R110x-overlay.dts"
+s = open(p).read()
+for name in ("fragment@1a", "fragment@1b"):
+    start = s.find("\t" + name + " {")
+    if start < 0:
+        continue
+    i = s.find("{", start)
+    depth = 0
+    for j in range(i, len(s)):
+        if s[j] == "{":
+            depth += 1
+        elif s[j] == "}":
+            depth -= 1
+            if depth == 0:
+                end = s.find("\n", j) + 1
+                s = s[:start] + s[end:]
+                break
+s = "\n".join(l for l in s.split("\n") if "&frag0>" not in l)
+open(p, "w").write(s)
+PYEOF
 
     # Check if the source file exists before renaming
     if [ -f overlays/rpi/reComputer-R100x-overlay.dts ]; then

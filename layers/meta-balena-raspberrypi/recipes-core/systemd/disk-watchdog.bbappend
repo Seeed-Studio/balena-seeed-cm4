@@ -6,3 +6,5 @@
 # self-heal disables the service. Keep the machines off that path until
 # the missing by-state links are understood.
 SYSTEMD_AUTO_ENABLE:seeed-recomputer-r100x = "disable"
+SYSTEMD_AUTO_ENABLE:seeed-recomputer-r110x = "disable"
+SYSTEMD_AUTO_ENABLE:seeed-reterminal = "disable"

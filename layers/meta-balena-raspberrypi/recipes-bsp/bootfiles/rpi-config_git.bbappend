@@ -31,7 +31,10 @@ do_deploy:append() {
 		echo "dtparam=i2c_vc=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-reterminal" ]; then
 		# Use the Seeed reTerminal device tree overlay
+		# disable-bt frees the PL011 on GPIO14/15 (the Type-C debug UART)
+		# so serial0 aliases it for the getty, matching the r100x flow.
 		echo "dtoverlay=reTerminal" >> ${DEPLOYDIR}/bootfiles/config.txt
+		echo "dtoverlay=disable-bt" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C3 overlay for reTerminal
 		echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable VC4 KMS overlay for display
@@ -57,8 +60,11 @@ do_deploy:append() {
 		# echo "dtoverlay=i2c6" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r110x" ]; then
 		# Use the Seeed reComputer R110x device tree overlay v1.0
+		# disable-bt frees the PL011 on GPIO14/15 (the Type-C debug UART)
+		# so serial0 aliases it for the getty, matching the r100x flow.
         echo "dtparam=i2c_arm=on" >> ${DEPLOYDIR}/bootfiles/config.txt
 		echo "dtoverlay=reComputer-R110x" >> ${DEPLOYDIR}/bootfiles/config.txt
+		echo "dtoverlay=disable-bt" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r2x" ]; then
 		# Use the Seeed reComputer R2x device tree overlay
 		echo "dtoverlay=reComputer-R2x-base" >> ${DEPLOYDIR}/bootfiles/config.txt

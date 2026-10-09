@@ -126,6 +126,8 @@ BALENA_STATE_SIZE:raspberrypi4-64 = "20480"
 # not enough (the FAT layout needs room for atomic copies of the largest
 # file on top of the data itself).
 BALENA_BOOT_SIZE:seeed-recomputer-r100x = "163840"
+BALENA_BOOT_SIZE:seeed-recomputer-r110x = "163840"
+BALENA_BOOT_SIZE:seeed-reterminal = "163840"
 BALENA_BOOT_SIZE:raspberrypi4-superhub = "40960"
 BALENA_STATE_SIZE:raspberrypi4-superhub = "20480"
 IMAGE_ROOTFS_SIZE:raspberrypi4-unipi-neuron = "327680"
