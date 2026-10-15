@@ -1,15 +1,11 @@
-[submodule "layers/poky"]
-	path = layers/poky
-	url = https://github.com/balena-os/poky
-	branch = kirkstone
 [submodule "layers/meta-openembedded"]
 	path = layers/meta-openembedded
 	url = https://github.com/openembedded/meta-openembedded.git
-	branch = kirkstone
+	branch = wrynose
 [submodule "layers/meta-raspberrypi"]
 	path = layers/meta-raspberrypi
 	url = https://github.com/agherzan/meta-raspberrypi.git
-	branch = kirkstone
+	branch = wrynose
 [submodule "layers/meta-balena"]
 	path = layers/meta-balena
 	url = https://github.com/balena-os/meta-balena.git
@@ -25,8 +21,13 @@
 [submodule "layers/meta-cyclonedx"]
 	path = layers/meta-cyclonedx
 	url = https://github.com/balena-os/meta-cyclonedx
-	branch = kirkstone
-[submodule "layers/meta-balena-rpi-sb"]
-	path = layers/meta-balena-rpi-sb
-	url = https://github.com/balena-os/meta-balena-rpi-sb.git
+	branch = add-wrynose-to-layerseries-compat
+[submodule "layers/openembedded-core"]
+	url = https://git.openembedded.org/openembedded-core
+	branch = wrynose
+[submodule "layers/bitbake"]
+	url = https://git.openembedded.org/bitbake
 	branch = master
+[submodule "layers/meta-yocto"]
+	url = https://git.yoctoproject.org/meta-yocto
+	branch = wrynose
