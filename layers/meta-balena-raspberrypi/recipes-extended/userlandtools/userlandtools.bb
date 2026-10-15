@@ -20,13 +20,14 @@ SRCREV = "4a0a19b88b43e48c6b51b526b9378289fb712a4c"
 # SRCREV is changed.
 PV = "20210111"
 
-S = "${WORKDIR}/git"
 
 inherit cmake pkgconfig
+# Broadcom userland-2012 code: restore pre-C23 empty-parameter-list semantics
+CFLAGS:append = " -std=gnu11"
 
 ASNEEDED = ""
 EXTRA_OECMAKE = "-DCMAKE_BUILD_TYPE=Release -DCMAKE_EXE_LINKER_FLAGS='-Wl,--no-as-needed' \
-                 -DVMCS_INSTALL_PREFIX=${exec_prefix} -DARM64=ON "
+                 -DVMCS_INSTALL_PREFIX=${exec_prefix} -DARM64=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5 "
 
 # Keep only those libs & bins that are actually
 # used during boot EEPROM image update

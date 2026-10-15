@@ -2,7 +2,7 @@ SUMMARY = "Hailo8 firmware"
 LICENSE = "CLOSED"
 SRC_URI = "file://hailo8_fw.bin"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 do_install() {
     install -d ${D}/usr/lib/firmware/hailo

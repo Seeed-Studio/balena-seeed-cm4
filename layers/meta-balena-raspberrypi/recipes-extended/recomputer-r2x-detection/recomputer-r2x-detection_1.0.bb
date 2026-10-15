@@ -10,7 +10,7 @@ SRC_URI = "file://r21_board_detect.sh \
            file://recomputer-r2x-detection.init \
            file://recomputer-r2x-detection.service"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 inherit allarch systemd update-rc.d
 

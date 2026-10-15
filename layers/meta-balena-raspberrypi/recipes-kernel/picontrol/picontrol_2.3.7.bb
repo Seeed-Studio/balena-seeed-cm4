@@ -13,6 +13,5 @@ SRC_URI = " \
 # commit for tag 2.3.7
 SRCREV = "a193da23444466592ab53523eda8e657a59fd6e5"
 
-S = "${WORKDIR}/git"
 
 EXTRA_OEMAKE:append = " KDIR=${STAGING_KERNEL_DIR}"

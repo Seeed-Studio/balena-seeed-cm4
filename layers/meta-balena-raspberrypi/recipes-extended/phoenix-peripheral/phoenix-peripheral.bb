@@ -5,7 +5,6 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 SRC_URI = "git://github.com/balena-os/phoenix-peripheral.git;branch=master;protocol=https"
 SRCREV="29eb94ed3417f9207e37ce373a89a537c25f8a86"
 
-S = "${WORKDIR}/git"
 
 inherit systemd
 

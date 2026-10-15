@@ -17,5 +17,5 @@ do_install:append:revpi() {
 do_install:append() {
 	install -d ${D}/init.d
 
-	install -m 0755 ${WORKDIR}/kexec_pi4_fwgpio ${D}/init.d/73-kexec_pi4_fwgpio
+	install -m 0755 ${UNPACKDIR}/kexec_pi4_fwgpio ${D}/init.d/73-kexec_pi4_fwgpio
 }

@@ -27,11 +27,9 @@ FIRMWARE:raspberrypi4-64 = "firmware-2711"
 TGT_EEPROM_BIN = "pieeprom.upd"
 TGT_EEPROM_SIG = "pieeprom.sig"
 
-S = "${WORKDIR}/git"
 
 inherit deploy python3native sign-rsa
 
-S = "${WORKDIR}/git"
 
 RDEPENDS:${PN} = "dtc flashrom userlandtools"
 
@@ -71,8 +69,8 @@ do_compile() {
 
 do_install() {
 	install -d ${D}${libexecdir}
-	install -m 0775 ${WORKDIR}/pieeprom-update.sh ${D}${libexecdir}/pieeprom-update.sh
-	install -m 0775 ${WORKDIR}/pieeprom-flashrom.sh ${D}${libexecdir}/pieeprom-flashrom.sh
+	install -m 0775 ${UNPACKDIR}/pieeprom-update.sh ${D}${libexecdir}/pieeprom-update.sh
+	install -m 0775 ${UNPACKDIR}/pieeprom-flashrom.sh ${D}${libexecdir}/pieeprom-flashrom.sh
 }
 do_install[depends] += "\
     rpi-bootfiles:do_deploy \

@@ -26,7 +26,7 @@ RPIFW_SRC_URI = "https://api.github.com/repos/raspberrypi/firmware/tarball/${SRC
 RPIFW_SRC_URI:raspberrypi = "https://api.github.com/repos/raspberrypi/firmware/tarball/${SRCREV};downloadfilename=raspberrypi-firmware-${SHORTREV}.tar.gz;name=rpifw-pi0"
 RPIFW_SRC_URI:revpi = "https://api.github.com/repos/raspberrypi/firmware/tarball/${SRCREV};downloadfilename=raspberrypi-firmware-${SHORTREV}.tar.gz;name=rpifw-revpis"
 RPIFW_SRC_URI:revpi4 = "https://api.github.com/repos/raspberrypi/firmware/tarball/${SRCREV};downloadfilename=raspberrypi-firmware-${SHORTREV}.tar.gz;name=rpifw-revpis"
-RPIFW_S = "${WORKDIR}/raspberrypi-firmware-${SHORTREV}"
+RPIFW_S = "${UNPACKDIR}/raspberrypi-firmware-${SHORTREV}"
 
 SRC_URI = "${RPIFW_SRC_URI}"
 

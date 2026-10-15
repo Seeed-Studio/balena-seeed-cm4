@@ -12,7 +12,7 @@ RDEPENDS:${PN} += "libmodbus"
 # Corresonds to v1.2.44
 SRCREV = "8eadfe0dd3098e8973738c20d61b453b390d0f7d"
 
-S = "${WORKDIR}/git/src"
+S = "${UNPACKDIR}/git/src"
 
 TARGET_CC_ARCH += "${LDFLAGS}"
 EXTRA_OEMAKE += "MODBUSDIR=${STAGING_INCDIR}/.. CC='${CC}'"

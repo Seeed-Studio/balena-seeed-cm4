@@ -6,7 +6,7 @@ DEPENDS += "libgpiod"
 
 SRC_URI = "file://rs485_DE.c"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 LDFLAGS += " -Wl,--hash-style=gnu"
 
