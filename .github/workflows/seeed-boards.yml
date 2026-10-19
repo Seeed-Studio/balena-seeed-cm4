@@ -115,7 +115,7 @@ jobs:
             BUILD_OPTIONS=""
           fi
           ./balena-yocto-scripts/build/barys --dry-run $BUILD_OPTIONS
-          source layers/poky/oe-init-build-env
+          source layers/openembedded-core/oe-init-build-env
           MACHINE=${{ matrix.machine }} bitbake balena-image
           df -h /
 
@@ -132,14 +132,14 @@ jobs:
         # on failure/budget-stop so partial progress is banked.
         if: always()
         run: |
-          if [ -f layers/poky/scripts/sstate-cache-management.py ]; then
+          if [ -f layers/openembedded-core/scripts/sstate-cache-management.py ]; then
             if [ -d build/tmp/stamps ]; then
-              python3 layers/poky/scripts/sstate-cache-management.py -y -v \
+              python3 layers/openembedded-core/scripts/sstate-cache-management.py -y -v \
                 --cache-dir=build/sstate-cache \
                 --stamps-dir=build/tmp/stamps \
                 || echo "WARNING: unused-sstate cleanup failed"
             fi
-            python3 layers/poky/scripts/sstate-cache-management.py -y -v \
+            python3 layers/openembedded-core/scripts/sstate-cache-management.py -y -v \
               --cache-dir=build/sstate-cache \
               --remove-duplicated \
               || echo "WARNING: duplicate-sstate cleanup failed"
