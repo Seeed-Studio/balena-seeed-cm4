@@ -10,18 +10,10 @@ on:
           - development
           - production
         default: 'production'
-      disable_upload_downloads:
-        type: boolean
-        description: 'Disable upload of downloads cache (per machine workflow still can use existing cache)'
-        default: true
-      clean_build:
-        type: boolean
-        description: 'Force clean build for all machines'
-        default: false
       tag_name:
-        description: 'Tag name'
-        required: true
-        default: 'v1.0.0'
+        description: 'Release tag to publish images to (release is created if missing; empty = no release upload)'
+        required: false
+        default: ''
         type: string
 
 jobs:
@@ -31,132 +23,46 @@ jobs:
       actions: write
       contents: write
     steps:
-      - name: Check tag
-        id: check_tag
-        run: |
-          if [[ ${{ github.event_name }} == 'workflow_dispatch' ]]; then
-           echo "TAG_NAME=${{ github.event.inputs.tag_name }}" >> $GITHUB_ENV
-          elif [[ ${{ github.event_name }} == 'create' ]]; then
-           echo "TAG_NAME=${{ github.ref }}" >> $GITHUB_ENV
-          fi
-
-      - name: Creat release
-        id: create_release
-        uses: actions/create-release@v1.1.4
+      - name: Create release
+        # Idempotent: reuse the release if it already exists so re-runs of
+        # this workflow (e.g. after a timed-out board) keep appending assets.
+        if: ${{ inputs.tag_name != '' }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ env.TAG_NAME }}
-          release_name: Release ${{ env.TAG_NAME }}
-          draft: false
-          body: |
-            # balena Image Build for SEEED Boards
-            **Build Information:**
-            - Commit: `${{ github.sha }}`
-            
-            **Files:**
-            This release contains the balena image for device.
-            
-            **Installation:**
-            Flash the .img file to an SD card or eMMC storage using balenaEtcher or dd.
-            
-            ---
-            *Built with GitHub Actions using KAS automation*
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG_NAME: ${{ inputs.tag_name }}
+        run: |
+          if gh release view "$TAG_NAME" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release $TAG_NAME already exists, reusing it"
+            exit 0
+          fi
+          gh release create "$TAG_NAME" -R "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "Release $TAG_NAME" \
+            --notes "# balena Image Build for SEEED Boards
+          **Build Information:**
+          - Commit: \`${GITHUB_SHA}\`
+          - Branch: \`${GITHUB_REF_NAME}\`
+          - Build type: \`${{ inputs.build_type }}\`
 
-      - name: build seeed-recomputer-r100x image
+          **Files:**
+          Each board uploads its \`<machine>-image.tar.gz\` asset to this
+          release as soon as its build completes.
+
+          **Installation:**
+          Flash the .img file to an SD card or eMMC storage using balenaEtcher or dd."
+
+      - name: Dispatch all-boards build
+        # The per-board workflow builds every machine as a parallel matrix
+        # when machine=all, and uploads the release assets itself. A single
+        # dispatch avoids the shared concurrency group cancelling sibling
+        # runs, and keeps this job well under the 6h job limit.
         uses: benc-uk/workflow-dispatch@v1.1
         with:
           workflow: seeed-balena-boards-build
           token: ${{ secrets.GITHUB_TOKEN }}
           inputs: >-
-                {
-                    "machine": "seeed-recomputer-r100x", 
-                    "build_type": "${{ inputs.build_type }}", 
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }}, 
-                    "clean_build": ${{ inputs.clean_build }}, 
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-recomputer-r110x image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-          workflow: seeed-balena-boards-build
-          token: ${{ secrets.GITHUB_TOKEN }}
-          inputs: >-
-                {
-                    "machine": "seeed-recomputer-r110x", 
-                    "build_type": "${{ inputs.build_type }}", 
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }}, 
-                    "clean_build": ${{ inputs.clean_build }}, 
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-reterminal image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-            workflow: seeed-balena-boards-build
-            token: ${{ secrets.GITHUB_TOKEN }}
-            inputs: >-
-                {
-                    "machine": "seeed-reterminal",
-                    "build_type": "${{ inputs.build_type }}",
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }},
-                    "clean_build": ${{ inputs.clean_build }},
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-reterminal-DM image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-            workflow: seeed-balena-boards-build
-            token: ${{ secrets.GITHUB_TOKEN }}
-            inputs: >-
-                {
-                    "machine": "seeed-reterminal-DM",
-                    "build_type": "${{ inputs.build_type }}",
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }},
-                    "clean_build": ${{ inputs.clean_build }},
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-rerouter-cm4 image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-            workflow: seeed-balena-boards-build
-            token: ${{ secrets.GITHUB_TOKEN }}
-            inputs: >-
-                {
-                    "machine": "seeed-rerouter-cm4",
-                    "build_type": "${{ inputs.build_type }}",
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }},
-                    "clean_build": ${{ inputs.clean_build }},
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-recomputer-r2x image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-            workflow: seeed-balena-boards-build
-            token: ${{ secrets.GITHUB_TOKEN }}
-            inputs: >-
-                {
-                    "machine": "seeed-recomputer-r2x",
-                    "build_type": "${{ inputs.build_type }}",
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }},
-                    "clean_build": ${{ inputs.clean_build }},
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
-
-      - name: build seeed-recomputer-r22 image
-        uses: benc-uk/workflow-dispatch@v1.1
-        with:
-            workflow: seeed-balena-boards-build
-            token: ${{ secrets.GITHUB_TOKEN }}
-            inputs: >-
-                {
-                    "machine": "seeed-recomputer-r22",
-                    "build_type": "${{ inputs.build_type }}",
-                    "disable_upload_downloads": ${{ inputs.disable_upload_downloads }},
-                    "clean_build": ${{ inputs.clean_build }},
-                    "tag_name": "${{ env.TAG_NAME }}"
-                }
+            {
+              "machine": "all",
+              "build_type": "${{ inputs.build_type }}",
+              "tag_name": "${{ inputs.tag_name }}"
+            }
