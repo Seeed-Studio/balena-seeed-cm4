@@ -3,6 +3,7 @@ From: is-qian <tangruiqian17@gmail.com>
 Date: Fri, 19 Jul 2024 15:30:14 +0800
 Subject: [PATCH] fix the compilation error for rtc-pcf563w
 
+Upstream-Status: Pending
 ---
  modules/rtc-pcf8563w/rtc-pcf8563w.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

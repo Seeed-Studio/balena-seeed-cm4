@@ -7,6 +7,7 @@ This dts was supplied by the customer for AD5446 DAC support on
 balenaFin.
 
 Signed-off-by: Florin Sarbu <florin@balena.io>
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile   |  1 +
  arch/arm/boot/dts/overlays/spyfly-overlay.dts | 38 +++++++++++++++++++++++++++++++++++

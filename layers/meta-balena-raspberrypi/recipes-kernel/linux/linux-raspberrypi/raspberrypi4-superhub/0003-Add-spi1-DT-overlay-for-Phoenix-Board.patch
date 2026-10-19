@@ -3,6 +3,7 @@ From: Frank_Liyang <Fli@edatec.cn>
 Date: Wed, 23 Nov 2022 10:16:08 +0800
 Subject: [PATCH 3/3] Add spi1 DT overlay for Phoenix Board
 
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile           |  1 +
  .../boot/dts/overlays/ed-spi1-1cs-overlay.dts | 60 +++++++++++++++++++

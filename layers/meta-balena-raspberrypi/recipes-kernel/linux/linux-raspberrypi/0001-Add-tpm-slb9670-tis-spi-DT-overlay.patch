@@ -3,6 +3,7 @@ Date: Mon, 1 Feb 2021 16:05:38 +0100
 Subject: [PATCH] Add tpm-slb9670-tis-spi DT overlay
 
 Signed-off-by: Michal Toman <michalt@balena.io>
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile           |  1 +
  .../overlays/tpm-slb9670-tis-spi-overlay.dts  | 21 +++++++++++++++++++

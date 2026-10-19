@@ -3,6 +3,7 @@ From: RayX123456 <rxie@edatec.cn>
 Date: Wed, 19 Feb 2025 18:11:49 +0800
 Subject: [PATCH] Add ed-mcp2515-overlay and ed-sdhost-overlay
 
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile           |   2 +
  .../boot/dts/overlays/ed-mcp2515-overlay.dts  | 181 ++++++++++++++++++

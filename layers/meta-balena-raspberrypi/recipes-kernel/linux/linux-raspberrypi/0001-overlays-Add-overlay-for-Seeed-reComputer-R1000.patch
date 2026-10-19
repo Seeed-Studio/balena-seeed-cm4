@@ -4,6 +4,7 @@ Date: Fri, 12 Jul 2024 09:05:28 +0000
 Subject: [PATCH] overlays: Add overlay for Seeed reComputer R1000
 
 Signed-off-by: Florin Sarbu <florin@balena.io>
+Upstream-Status: Pending
 ---
  .../dts/overlays/reComputer-R100x-overlay.dts | 285 ++++++++++++++++++
  1 file changed, 285 insertions(+)

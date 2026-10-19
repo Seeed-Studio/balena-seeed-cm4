@@ -17,6 +17,7 @@ board should keep these resistors, even on depop configurations.
 
 Change-type: patch
 Signed-off-by: Joseph Kogut <joseph@balena.io>
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/balena-fin-overlay.dts | 6 ++----
  1 file changed, 2 insertions(+), 4 deletions(-)

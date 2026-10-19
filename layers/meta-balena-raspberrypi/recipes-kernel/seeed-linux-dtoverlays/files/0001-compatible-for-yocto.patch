@@ -3,6 +3,7 @@ From: bigbearishappy <953308023@qq.com>
 Date: Fri, 8 Oct 2021 01:49:51 +0000
 Subject: [PATCH] compatible for yocto
 
+Upstream-Status: Pending
 ---
  Makefile | 2 --
  1 file changed, 2 deletions(-)

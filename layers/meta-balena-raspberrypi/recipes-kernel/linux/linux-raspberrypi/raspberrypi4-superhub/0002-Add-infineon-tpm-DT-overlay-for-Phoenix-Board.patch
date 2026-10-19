@@ -3,6 +3,7 @@ From: Frank_Liyang <Fli@edatec.cn>
 Date: Wed, 23 Nov 2022 10:14:09 +0800
 Subject: [PATCH 2/3] Add infineon-tpm DT overlay for Phoenix Board
 
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile           |  1 +
  .../dts/overlays/ed-infineon-tpm-overlay.dts  | 40 +++++++++++++++++++

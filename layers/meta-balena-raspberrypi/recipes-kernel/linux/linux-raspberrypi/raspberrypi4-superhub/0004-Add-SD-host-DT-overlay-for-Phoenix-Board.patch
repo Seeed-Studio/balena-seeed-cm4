@@ -3,6 +3,7 @@ From: Frank_Liyang <Fli@edatec.cn>
 Date: Thu, 22 Dec 2022 15:59:59 +0800
 Subject: [PATCH 4/4] Add SD host DT overlay for Phoenix Board
 
+Upstream-Status: Pending
 ---
  arch/arm/boot/dts/overlays/Makefile           |  1 +
  .../boot/dts/overlays/ed-sdhost-overlay.dts   | 36 +++++++++++++++++++

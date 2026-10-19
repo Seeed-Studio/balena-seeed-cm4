@@ -26,6 +26,7 @@ ever fires. Remove it rather than trying to fix the race in place,
 since upstream itself was never confident it was needed.
 
 Signed-off-by: Ryan <ryan@balena.io>
+Upstream-Status: Pending
 ---
  usr/bin/bthelper | 6 ------
  1 file changed, 6 deletions(-)
