@@ -23,11 +23,18 @@
 	url = https://github.com/balena-os/meta-cyclonedx
 	branch = add-wrynose-to-layerseries-compat
 [submodule "layers/openembedded-core"]
+	path = layers/openembedded-core
 	url = https://git.openembedded.org/openembedded-core
 	branch = wrynose
 [submodule "layers/bitbake"]
+	path = layers/bitbake
 	url = https://git.openembedded.org/bitbake
 	branch = master
 [submodule "layers/meta-yocto"]
+	path = layers/meta-yocto
 	url = https://git.yoctoproject.org/meta-yocto
 	branch = wrynose
+[submodule "tests/autohat"]
+	path = tests/autohat
+	url = https://github.com/balena-io/autohat.git
+	branch = master
