@@ -15,6 +15,11 @@ IMAGE_ROOTFS_MAXSIZE = "786432"
 IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r100x = "917504"
 IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r110x = "917504"
 IMAGE_ROOTFS_MAXSIZE:seeed-reterminal = "917504"
+# The pi5-based boards size the rootfs at 655360 (IMAGE_ROOTFS_SIZE:raspberrypi5)
+# plus the 262144 KiB wrynose EXTRA_SPACE, i.e. 917504 KiB, which trips the
+# 786432 cap in do_image_docker otherwise
+IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r2x = "917504"
+IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r22 = "917504"
 # hostapp ext4 is sized from ROOTFS_SIZE but must also hold the docker
 # image layers; wrynose-era content overflows the computed size
 IMAGE_ROOTFS_EXTRA_SPACE = "262144"
