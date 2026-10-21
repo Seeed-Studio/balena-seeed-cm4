@@ -8,3 +8,4 @@
 SYSTEMD_AUTO_ENABLE:seeed-recomputer-r100x = "disable"
 SYSTEMD_AUTO_ENABLE:seeed-recomputer-r110x = "disable"
 SYSTEMD_AUTO_ENABLE:seeed-reterminal = "disable"
+SYSTEMD_AUTO_ENABLE:seeed-reterminal-DM = "disable"

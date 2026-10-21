@@ -1,0 +1,15 @@
+# Self-contained boot flow for Seeed reTerminal DM (CM4), same pattern as
+# reTerminal/r100x: the resin u-boot environment does not build against
+# wrynose's u-boot 2026.01, so the kernel bundle (Image + bundled initramfs)
+# is staged on the FAT boot partition as /Image and loaded directly at a
+# 2MB-aligned address in upper memory (the 6.12 kernel dies when relocated
+# from the low kernel_addr_r). The firmware-loaded DTB with config.txt
+# overlays applied is taken from ${fdtcontroladdr}.
+# Unlike the other Seeed boards, the console stays on serial0: config.txt
+# does not disable Bluetooth, so the PL011 (ttyAMA0) remains the BT HCI
+# UART and GPIO14/15 (the Type-C CH343 debug port) carry the mini-UART.
+mmc dev 0
+load mmc 0:1 0x10000000 /Image
+setenv bootargs earlycon=uart8250,mmio32,0xfe215040 console=serial0,115200n8 console=tty1 root=/dev/mmcblk0p2 rootfstype=ext4 rootwait net.ifnames=0 cgroup_enable=memory
+fdt addr ${fdtcontroladdr}
+booti 0x10000000 - ${fdtcontroladdr}
