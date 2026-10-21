@@ -58,7 +58,7 @@ index c7356718a7c6..caba4c34ab82 100644
  #endif
  };
  
-@@ -2157,6 +2182,30 @@ static int option_probe(struct usb_serial *serial,
+@@ -2157,6 +2182,32 @@ static int option_probe(struct usb_serial *serial,
  				&serial->interface->cur_altsetting->desc;
  	unsigned long device_flags = id->driver_info;
  
@@ -81,7 +81,9 @@ index c7356718a7c6..caba4c34ab82 100644
 +			return -ENODEV;
 +
 +		//Quectel EC25&EC20's interface 4 can be used as USB network device (qmi)
-+		if ((idProduct != 0x6026 && idProduct != 0x6120) && serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
++		//RM500U(0x0900) is a 7-interface module whose AT port is on
++		//interface 4, so do not reject its interfaces >= 4.
++		if ((idProduct != 0x6026 && idProduct != 0x6120 && idProduct != 0x0900) && serial->interface->cur_altsetting->desc.bInterfaceNumber >= 4)
 +			return -ENODEV;
 +	}
 +#endif
