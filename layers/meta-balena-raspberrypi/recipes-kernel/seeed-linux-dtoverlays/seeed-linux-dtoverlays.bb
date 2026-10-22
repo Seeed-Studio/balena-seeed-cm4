@@ -67,6 +67,10 @@ PYEOF
 
 do_install() {
     install -d ${D}${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/
+    # Load ch34x before cdc_acm so WCH chips bind to it (ttyCH343USB*)
+    # instead of racing cdc_acm (ttyACM*), same pattern as sd8887-nxp.
+    install -d ${D}${sysconfdir}/modprobe.d
+    echo "softdep cdc_acm pre: ch34x" > ${D}${sysconfdir}/modprobe.d/ch34x.conf
     oe_runmake \
         ARCH=${ARCH} \
         KBUILD=${STAGING_KERNEL_DIR} \
@@ -105,4 +109,5 @@ do_deploy() {
 addtask deploy before do_build after do_compile
 
 FILES:${PN} += "${nonarch_base_libdir}/modules/${KERNEL_VERSION}/extra/*"
+FILES:${PN} += "${sysconfdir}/modprobe.d/ch34x.conf"
 FILES:${PN} += "${DEPLOYDIR}/*"
