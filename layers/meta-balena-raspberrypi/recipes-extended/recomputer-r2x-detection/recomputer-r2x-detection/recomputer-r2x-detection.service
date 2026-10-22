@@ -7,7 +7,9 @@ Before=sysinit.target
 [Service]
 Type=oneshot
 ExecStart=#SBINDIR#/r21_board_detect.sh
-ExecStartPost=#BASE_BINDIR#/systemctl --no-reload disable run-postinsts.service
+# run-postinsts.service no longer exists on wrynose; '-' prefix ignores
+# the failure so the oneshot unit is not marked failed
+ExecStartPost=-#BASE_BINDIR#/systemctl --no-reload disable run-postinsts.service
 RemainAfterExit=yes
 TimeoutSec=0
 
