@@ -60,6 +60,16 @@ BALENA_CONFIGS[xhci_renesas] = " \
     CONFIG_USB_XHCI_PCI_RENESAS=y \
 "
 
+# The reComputer-R2x and reComputer-R1000 DT overlays register a gpio-beeper
+# device, but without this driver nothing ever claims the buzzer line and it
+# floats from power-on, causing occasional beeps at boot. gpio-beeper probes
+# the line as output-low, holding the buzzer off, and exposes it for software
+# beeping via input events. Built-in so it binds as early as possible.
+BALENA_CONFIGS:append = " gpio-beeper"
+BALENA_CONFIGS[gpio-beeper] = " \
+    CONFIG_GPIO_BEEPER=y \
+"
+
 # Fix dtbo loading on 64bits,
 # see commit 949b88bb for details
 get_cc_option () {
