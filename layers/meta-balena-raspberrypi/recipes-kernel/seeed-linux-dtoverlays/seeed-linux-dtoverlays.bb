@@ -104,6 +104,14 @@ do_deploy() {
             fi
         done
     fi
+
+    # The RPi boot firmware uses a dotted dtoverlay name verbatim (it never
+    # appends .dtbo) and silently drops overlong dtoverlay lines, so deploy
+    # the reComputer-R100x v1.1 overlay under a short, dot-free alias that
+    # config.txt can load reliably.
+    if [ "${MACHINE}" = "seeed-recomputer-r100x" ] && [ -f "${DEPLOYDIR}/reComputer-R100x-1.1.dtbo" ]; then
+        install -m 0644 "${DEPLOYDIR}/reComputer-R100x-1.1.dtbo" "${DEPLOYDIR}/r100x-v11.dtbo"
+    fi
 }
 
 addtask deploy before do_build after do_compile

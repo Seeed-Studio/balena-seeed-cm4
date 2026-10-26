@@ -46,12 +46,23 @@ do_deploy:append() {
 	elif [ "${MACHINE}" = "seeed-recomputer-r100x" ]; then
 		# Use the Seeed reComputer R100x device tree overlay defaulting to v1.1
         echo "dtparam=i2c_arm=on" >> ${DEPLOYDIR}/bootfiles/config.txt
-		# uart2: expose the second UART; disable-bt: frees the PL011 on
-		# GPIO14/15 (the Type-C CH343 debug port) so serial0 aliases it.
 		# The vc4-kms-v3d,cma-320 overlay previously set through VC4DTBO
 		# dies at kernel entry on the 1GiB CM4: the 320MiB CMA reservation
 		# leaves the kernel without usable memory.
-		echo "dtoverlay=reComputer-R100x-1.1,uart2" >> ${DEPLOYDIR}/bootfiles/config.txt
+		#
+		# Firmware constraints for this line (verified with dtdebug=1):
+		# - a dotted overlay name is used verbatim, the firmware does not
+		#   append .dtbo, so "reComputer-R100x-1.1" looks for a file without
+		#   an extension and the overlay never loads;
+		# - overlong dtoverlay lines are dropped silently (a 36-char line was
+		#   skipped while a 32-char line was processed), so keep it short.
+		# The short dot-free alias is deployed by seeed-linux-dtoverlays.bb.
+		# No uart2/i2c0 parameter: the overlay default is the v1.1 wiring
+		# used by these units (PCA9535 on i2c5, LEDs/beeper on the expander).
+		echo "dtoverlay=r100x-v11" >> ${DEPLOYDIR}/bootfiles/config.txt
+		# disable-bt frees the PL011 on GPIO14/15 (the Type-C CH343 debug
+		# port) so serial0 aliases it for the getty, same choice as
+		# reTerminal/R110x.
 		echo "dtoverlay=disable-bt" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable I2C overlays
 		# echo "dtoverlay=i2c0" >> ${DEPLOYDIR}/bootfiles/config.txt
