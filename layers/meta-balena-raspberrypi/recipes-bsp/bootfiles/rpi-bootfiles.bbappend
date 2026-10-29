@@ -28,7 +28,14 @@ RPIFW_SRC_URI:revpi = "https://api.github.com/repos/raspberrypi/firmware/tarball
 RPIFW_SRC_URI:revpi4 = "https://api.github.com/repos/raspberrypi/firmware/tarball/${SRCREV};downloadfilename=raspberrypi-firmware-${SHORTREV}.tar.gz;name=rpifw-revpis"
 RPIFW_S = "${UNPACKDIR}/raspberrypi-firmware-${SHORTREV}"
 
-SRC_URI = "${RPIFW_SRC_URI}"
+# Do NOT re-set SRC_URI here. The recipe already assigns
+# SRC_URI = "${RPIFW_SRC_URI}" (lazily expanded, so our RPIFW_SRC_URI
+# overrides above still take effect), and a hard re-set in this append
+# would clobber every file:// entry added by earlier-priority appends:
+# meta-seeed-cm4's dt-blob-disp1-cam2.bin and our own fincm3-dt-blob.bin.
+# Their do_deploy appends install those files unconditionally, so the
+# clobber broke rpi-bootfiles:do_deploy on every fresh build (the file
+# was never unpacked).
 
 SRC_URI[rpifw.sha256sum] = "649c49254ed0e78b31d77ece7dadd5bd31f76a2362e2bc9a3556a0a87d6f6c0e"
 SRC_URI[rpifw-pi0.sha256sum] = "4b436f8946b139c6a1202375ef55d4848e3bcd8c1a9cb47000e06d7ecec828f7"

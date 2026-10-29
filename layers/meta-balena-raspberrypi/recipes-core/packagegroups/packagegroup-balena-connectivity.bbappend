@@ -1,81 +1,45 @@
-CONNECTIVITY_FIRMWARES:append = " \
-    linux-firmware-rpidistro-bcm43430 \
-    linux-firmware-rpidistro-bcm43455 \
-    linux-firmware-sd8887 \
-    bluez-firmware-rpidistro-bcm43430a1-hcd \
-    bluez-firmware-rpidistro-bcm4345c0-hcd \
-"
-CONNECTIVITY_FIRMWARES:append:raspberrypi = " linux-firmware-mt7601u"
-
-CONNECTIVITY_FIRMWARES:append:raspberrypi400-64 = " \
-    linux-firmware-rpidistro-bcm43456 \
-    bluez-firmware-rpidistro-bcm4345c5-hcd \
-"
-
-CONNECTIVITY_FIRMWARES:remove:raspberrypi4-64 = " \
-    linux-firmware-rpidistro-bcm43436 \
-    linux-firmware-rpidistro-bcm43436s \
-"
-
-CONNECTIVITY_FIRMWARES:append:raspberrypi0-2w-64 = " \
-    linux-firmware-rpidistro-bcm43430 \
-    linux-firmware-rpidistro-bcm43436 \
-    linux-firmware-rpidistro-bcm43436s \
-    bluez-firmware-rpidistro-bcm43430a1-hcd \
-    bluez-firmware-rpidistro-bcm43430b0-hcd \
-"
-
-CONNECTIVITY_FIRMWARES:remove:raspberrypi0-2w-64 = " \
-    linux-firmware-rpidistro-bcm43455 \
-    bluez-firmware-rpidistro-bcm4345c0-hcd \
-"
-
-CONNECTIVITY_FIRMWARES:remove = " \
-    linux-firmware-wl12xx \
-    linux-firmware-wl18xx \
-"
-
-REMOVED_FOR_HUP_SPACE = " \
-    linux-firmware-bcm43455 \
-    linux-firmware-ibt-11-5 \
-    linux-firmware-ibt-12-16 \
-    linux-firmware-ibt-18-16-1 \
-    linux-firmware-ibt-hw-37-7 \
-    linux-firmware-ibt-hw-37-8 \
-    linux-firmware-iwlwifi-3168 \
-    linux-firmware-iwlwifi-9000 \
-    linux-firmware-iwlwifi-9260 \
-    linux-firmware-iwlwifi-qu-b0-hr-b0 \
-    linux-firmware-pcie8897 \
-    linux-firmware-rtl8723 \
-    linux-firmware-rtl8821 \
-    linux-firmware-rtl8723b-bt \
-    linux-firmware-ralink-nic \
+# The Seeed boards' WiFi/BT lives on the CM4 module and uses the
+# rpidistro cyfmac / bluez-firmware packages. None of the generic
+# connectivity firmwares match hardware these devices can have:
+# the iwlwifi set is Intel (12 packages appended by meta-balena's
+# wrynose layer), ralink/realtek/ti cover USB dongles the products
+# never ship. Drop them from the image to keep it as lean as the
+# standalone BSP images.
+#
+# wireless-regdb-static is kept: the CM4 radio needs the regulatory
+# database for full channel coverage.
+#
+# Scoped per seeed machine so the other machines this family layer
+# defines (unipi, revpi, nebra, fincm3, ...) keep their firmware set.
+SEEED_UNUSED_CONNECTIVITY_FIRMWARES = " \
     linux-firmware-ath9k \
+    linux-firmware-mt7601u \
+    linux-firmware-ralink \
     linux-firmware-rtl8192cu \
     linux-firmware-rtl8192su \
+    linux-firmware-rtl8723 \
+    linux-firmware-rtl8723b-bt \
     linux-firmware-bcm43143 \
     linux-firmware-iwlwifi-135-6 \
-    linux-firmware-iwlwifi-3160-7 \
-    linux-firmware-iwlwifi-3160-8 \
-    linux-firmware-iwlwifi-3160-9 \
+    linux-firmware-iwlwifi-3160 \
     linux-firmware-iwlwifi-6000-4 \
-    linux-firmware-iwlwifi-6000g2a-5 \
     linux-firmware-iwlwifi-6000g2a-6 \
-    linux-firmware-iwlwifi-6000g2b-5 \
     linux-firmware-iwlwifi-6000g2b-6 \
-    linux-firmware-iwlwifi-6050-4 \
     linux-firmware-iwlwifi-6050-5 \
     linux-firmware-iwlwifi-7260 \
     linux-firmware-iwlwifi-7265 \
     linux-firmware-iwlwifi-7265d \
     linux-firmware-iwlwifi-8000c \
     linux-firmware-iwlwifi-8265 \
-    linux-firmware-sd8887 \
-"
-
-# Temporary make space for HUP, untill firmwares
-# are provided by hostapp-extensions
-CONNECTIVITY_FIRMWARES:remove:raspberrypi400-64 = "${REMOVED_FOR_HUP_SPACE}"
-CONNECTIVITY_FIRMWARES:remove:raspberrypicm4-ioboard = "${REMOVED_FOR_HUP_SPACE}"
-CONNECTIVITY_FIRMWARES:remove:raspberrypi0-2w-64 = "${REMOVED_FOR_HUP_SPACE}"
+    linux-firmware-iwlwifi-9260 \
+    linux-firmware-rtl8188eu \
+    linux-firmware-wl12xx \
+    linux-firmware-wl18xx \
+    "
+CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r100x = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r110x = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r2x = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r22 = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-rerouter-cm4 = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-reterminal = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
+CONNECTIVITY_FIRMWARES:remove:seeed-reterminal-DM = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
