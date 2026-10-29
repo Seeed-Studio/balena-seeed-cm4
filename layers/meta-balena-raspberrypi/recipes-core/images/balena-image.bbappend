@@ -8,6 +8,12 @@ do_image_balenaos_img[depends] += "${@oe.utils.conditional('MACHINE','seeed-reco
 do_rootfs[depends] += "${@oe.utils.conditional('MACHINE','seeed-recomputer-r22',' virtual/balena-bootloader:do_deploy','',d)}"
 do_image_balenaos_img[depends] += "${@oe.utils.conditional('MACHINE','seeed-recomputer-r22',' virtual/balena-bootloader:do_deploy','',d)}"
 
+# The CM4-based seeed machines (machines defined by the meta-seeed-cm4
+# submodule) stage device tree overlays from the seeed-linux-dtoverlays
+# deploy dir into the boot partition, so the boot dir generation must run
+# after that deploy.
+do_resin_boot_dirgen_and_deploy[depends] += "${@'seeed-linux-dtoverlays:do_deploy' if d.getVar('MACHINE') in ('seeed-recomputer-r100x', 'seeed-recomputer-r110x', 'seeed-reterminal', 'seeed-reterminal-DM', 'seeed-rerouter-cm4') else ''}"
+
 # wrynose-era rootfs binaries are larger than the kirkstone-era cap
 IMAGE_ROOTFS_MAXSIZE = "786432"
 # r100x additionally stages the kernel bundle in resin-boot (the 1-bootfiles

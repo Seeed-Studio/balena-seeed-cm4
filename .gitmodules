@@ -38,3 +38,7 @@
 	path = tests/autohat
 	url = https://github.com/balena-io/autohat.git
 	branch = master
+[submodule "layers/meta-seeed-cm4"]
+	path = layers/meta-seeed-cm4
+	url = https://github.com/Seeed-Studio/meta-seeed-cm4.git
+	branch = meta-balena
