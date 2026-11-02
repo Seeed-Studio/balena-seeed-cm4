@@ -121,6 +121,20 @@ jobs:
             BUILD_OPTIONS=""
           fi
           ./balena-yocto-scripts/build/barys --dry-run $BUILD_OPTIONS
+          # CI-only build tuning, learned from the meta-seeed-cm4 CI
+          # (kas/ci.yml): rm_work deletes each task's work directory once
+          # its output is committed to sstate/deploy, keeping tmp/ far
+          # below the runner's ~14 GB free disk (a full tmp/work for the
+          # ~7k-task balenaOS graph would otherwise flirt with the
+          # BB_DISKMON HALT thresholds in the local.conf template and
+          # stall the build on disk pressure). The zlib/pigz premirrors
+          # route around the intermittently-corrupt zlib.net tarballs
+          # (verified bad checksums on two networks).
+          cat >> build/conf/local.conf <<'CONF'
+INHERIT += "rm_work"
+PREMIRRORS:prepend = "https://zlib.net/ https://github.com/madler/zlib/releases/download/v1.3.2/ \n"
+PREMIRRORS:prepend = "http://zlib.net/pigz/fossils/ https://downloads.yoctoproject.org/mirror/sources/ \n"
+CONF
           source layers/openembedded-core/oe-init-build-env
           MACHINE=${{ matrix.machine }} bitbake balena-image
           df -h /
