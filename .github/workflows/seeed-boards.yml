@@ -130,11 +130,15 @@ jobs:
           # stall the build on disk pressure). The zlib/pigz premirrors
           # route around the intermittently-corrupt zlib.net tarballs
           # (verified bad checksums on two networks).
+          # (The heredoc body is indented like the rest of this block;
+          # YAML strips that common indent, so the shell still sees it
+          # at column 0. Unindented lines here end the YAML block scalar
+          # and break the whole workflow file.)
           cat >> build/conf/local.conf <<'CONF'
-INHERIT += "rm_work"
-PREMIRRORS:prepend = "https://zlib.net/ https://github.com/madler/zlib/releases/download/v1.3.2/ \n"
-PREMIRRORS:prepend = "http://zlib.net/pigz/fossils/ https://downloads.yoctoproject.org/mirror/sources/ \n"
-CONF
+          INHERIT += "rm_work"
+          PREMIRRORS:prepend = "https://zlib.net/ https://github.com/madler/zlib/releases/download/v1.3.2/ \n"
+          PREMIRRORS:prepend = "http://zlib.net/pigz/fossils/ https://downloads.yoctoproject.org/mirror/sources/ \n"
+          CONF
           source layers/openembedded-core/oe-init-build-env
           MACHINE=${{ matrix.machine }} bitbake balena-image
           df -h /
