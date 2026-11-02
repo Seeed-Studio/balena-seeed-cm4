@@ -30,6 +30,11 @@ on:
         required: false
         type: string
         default: ''
+      use_cache:
+        description: Restore the sstate cache (uncheck for a clean build; the result is still saved)
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: balena-${{ github.workflow }}-${{ github.ref }}
@@ -93,6 +98,10 @@ jobs:
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 
       - name: Restore Yocto sstate cache
+        # Skipped for a clean build (use_cache unchecked). Compared as a
+        # string so it also works when build-all-seeed-boards dispatches
+        # this workflow through the API, which sends inputs as strings.
+        if: ${{ format('{0}', inputs.use_cache) != 'false' }}
         uses: actions/cache/restore@v4
         with:
           path: build/sstate-cache
