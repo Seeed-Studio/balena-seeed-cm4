@@ -21,6 +21,10 @@ IMAGE_ROOTFS_MAXSIZE = "786432"
 IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r100x = "917504"
 IMAGE_ROOTFS_MAXSIZE:seeed-recomputer-r110x = "917504"
 IMAGE_ROOTFS_MAXSIZE:seeed-reterminal = "917504"
+# rerouter-cm4 lands at exactly 917504 KiB too (wrynose-era content plus
+# the 262144 KiB EXTRA_SPACE) and fails do_image_docker against the
+# default cap otherwise
+IMAGE_ROOTFS_MAXSIZE:seeed-rerouter-cm4 = "917504"
 # The pi5-based boards size the rootfs at 655360 (IMAGE_ROOTFS_SIZE:raspberrypi5)
 # plus the 262144 KiB wrynose EXTRA_SPACE, i.e. 917504 KiB, which trips the
 # 786432 cap in do_image_docker otherwise
