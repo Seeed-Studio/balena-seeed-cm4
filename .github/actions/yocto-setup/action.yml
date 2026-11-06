@@ -1,0 +1,81 @@
+name: Yocto build setup
+description: >-
+  Prepare a GitHub-hosted runner for a balenaOS Yocto build and generate
+  build/conf with the CI-only local.conf tuning. Shared by the toolchain
+  stage and the per-board stage of seeed-boards.yml so both compute
+  identical task signatures. Expects the repository to be checked out
+  with submodules.
+
+inputs:
+  build_type:
+    description: development or production
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Free up runner disk space
+      shell: bash
+      run: |
+        # Strip the large preinstalled toolchains and images the Yocto
+        # build never uses. Tolerate missing packages.
+        sudo apt-get remove -yq \
+          '^dotnet-.*' '^llvm-.*' 'php.*' \
+          azure-cli google-cloud-sdk firefox google-chrome-stable \
+          powershell mono-complete > /dev/null 2>&1 || true
+        sudo apt-get autoremove -y > /dev/null 2>&1 || true
+        sudo apt-get clean
+        sudo rm -rf "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}" \
+          /usr/local/lib/android /usr/local/share/boost \
+          /usr/share/dotnet /usr/share/swift \
+          /opt/ghc /usr/local/.ghcup
+        # Preloaded container images (~3 GiB); nothing in this job uses docker.
+        sudo docker image prune -af > /dev/null 2>&1 || true
+        df -h /
+
+    - name: Install Yocto host dependencies
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          bc build-essential chrpath cpio diffstat file gawk git \
+          git-lfs iputils-ping jq libacl1 libegl1 lz4 libsdl2-dev \
+          mesa-common-dev pylint python3 python3-git python3-jinja2 \
+          python3-pexpect python3-subunit socat texinfo unzip \
+          wget xterm xz-utils zstd locales
+        # Some layer scripts expect bash as /bin/sh.
+        sudo rm -f /bin/sh && sudo ln -s bash /bin/sh
+
+    - name: Enable BitBake user namespaces
+      shell: bash
+      run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+    - name: Generate build configuration
+      shell: bash
+      env:
+        BUILD_TYPE: ${{ inputs.build_type }}
+      run: |
+        if [ "$BUILD_TYPE" = "development" ]; then
+          BUILD_OPTIONS="-d"
+        else
+          BUILD_OPTIONS=""
+        fi
+        ./balena-yocto-scripts/build/barys --dry-run $BUILD_OPTIONS
+        # CI-only build tuning, learned from the meta-seeed-cm4 CI
+        # (kas/ci.yml): rm_work deletes each task's work directory once
+        # its output is committed to sstate/deploy, keeping tmp/ far
+        # below the runner's ~14 GB free disk (a full tmp/work for the
+        # ~7k-task balenaOS graph would otherwise flirt with the
+        # BB_DISKMON HALT thresholds in the local.conf template and
+        # stall the build on disk pressure). The zlib/pigz premirrors
+        # route around the intermittently-corrupt zlib.net tarballs
+        # (verified bad checksums on two networks).
+        # (The heredoc body is indented like the rest of this block;
+        # YAML strips that common indent, so the shell still sees it
+        # at column 0. Unindented lines here end the YAML block scalar
+        # and break the whole file.)
+        cat >> build/conf/local.conf <<'CONF'
+        INHERIT += "rm_work"
+        PREMIRRORS:prepend = "https://zlib.net/ https://github.com/madler/zlib/releases/download/v1.3.2/ \n"
+        PREMIRRORS:prepend = "http://zlib.net/pigz/fossils/ https://downloads.yoctoproject.org/mirror/sources/ \n"
+        CONF

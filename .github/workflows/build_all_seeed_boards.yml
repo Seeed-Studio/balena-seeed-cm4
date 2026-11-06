@@ -15,11 +15,6 @@ on:
         required: false
         default: ''
         type: string
-      use_cache:
-        description: 'Restore the sstate cache (uncheck for a clean build; the result is still saved)'
-        required: false
-        type: boolean
-        default: true
 
 jobs:
   Build-all-images:
@@ -57,10 +52,9 @@ jobs:
           Flash the .img file to an SD card or eMMC storage using balenaEtcher or dd."
 
       - name: Dispatch all-boards build
-        # The per-board workflow builds every machine as a parallel matrix
-        # when machine=all, and uploads the release assets itself. A single
-        # dispatch avoids the shared concurrency group cancelling sibling
-        # runs, and keeps this job well under the 6h job limit.
+        # With machine=all the per-board workflow builds the shared native
+        # toolchain once, then every machine as a parallel matrix, and
+        # uploads the release assets itself. Every run is a clean build.
         uses: benc-uk/workflow-dispatch@v1.1
         with:
           workflow: seeed-balena-boards-build
@@ -69,6 +63,5 @@ jobs:
             {
               "machine": "all",
               "build_type": "${{ inputs.build_type }}",
-              "tag_name": "${{ inputs.tag_name }}",
-              "use_cache": "${{ inputs.use_cache }}"
+              "tag_name": "${{ inputs.tag_name }}"
             }

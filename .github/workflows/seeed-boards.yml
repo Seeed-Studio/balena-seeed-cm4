@@ -1,5 +1,21 @@
 name: seeed-balena-boards-build
 
+# Every run is a clean build: nothing is restored from earlier runs.
+#
+# A cold balenaOS build of one board takes 3.5-5.5 h on a 4-vCPU hosted
+# runner (runner speed varies ~1.5x), so building each board from
+# scratch in its own job keeps hitting the 6 h job limit. The work is
+# split in two stages instead, sharing results only inside this run:
+#
+#   1. toolchain: builds every -native recipe of balena-image once,
+#      including the serial rust-llvm-native -> rust-native ->
+#      cargo-native chain that is the critical path of a cold build.
+#      Native task signatures are identical for every seeed machine
+#      (checked rpi4 vs rpi5 with bitbake -S none), so its sstate is
+#      handed to all boards as a run-scoped artifact.
+#   2. build: one job per board restores that sstate and builds only
+#      the target packages, kernel and image.
+
 on:
   workflow_dispatch:
     inputs:
@@ -30,23 +46,71 @@ on:
         required: false
         type: string
         default: ''
-      use_cache:
-        description: Restore the sstate cache (uncheck for a clean build; the result is still saved)
-        required: false
-        type: boolean
-        default: true
 
 concurrency:
-  group: balena-${{ github.workflow }}-${{ github.ref }}
+  # Per machine, so dispatching two single-board builds back to back does
+  # not cancel the first one.
+  group: balena-${{ github.workflow }}-${{ github.ref }}-${{ inputs.machine }}
   cancel-in-progress: true
 
 env:
   LANG: en_US.UTF-8
   VERBOSE: "1"
+  # Machine used to configure the toolchain stage. Any seeed machine
+  # works: -native signatures do not depend on MACHINE.
+  TOOLCHAIN_MACHINE: seeed-recomputer-r100x
 
 jobs:
+  toolchain:
+    name: toolchain (native)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Set up Yocto build
+        uses: ./.github/actions/yocto-setup
+        with:
+          build_type: ${{ inputs.build_type }}
+
+      - name: Build native toolchains
+        timeout-minutes: 330
+        run: |
+          source layers/openembedded-core/oe-init-build-env
+          # List every recipe balena-image needs and keep the -native
+          # ones. Natives only depend on natives, so this builds no
+          # target code. bitbake -g writes its output to the cwd.
+          mkdir -p "$RUNNER_TEMP/depgraph"
+          (cd "$RUNNER_TEMP/depgraph" && MACHINE=$TOOLCHAIN_MACHINE bitbake -g balena-image)
+          NATIVES=$(grep -- '-native$' "$RUNNER_TEMP/depgraph/pn-buildlist" | sort -u)
+          echo "Building $(echo "$NATIVES" | wc -l) native recipes"
+          MACHINE=$TOOLCHAIN_MACHINE bitbake $NATIVES
+          du -sh sstate-cache
+          df -h /
+
+      - name: Hand the native sstate to the board jobs
+        # Run-scoped: board jobs of this run (and their re-runs) download
+        # it; later runs never see it, so every run stays a clean build.
+        # sstate objects are already zstd-compressed, so skip recompression.
+        # hashserv.db carries the hash-equivalence mapping so the board
+        # jobs resolve exactly the same sstate objects.
+        uses: actions/upload-artifact@v4
+        with:
+          name: sstate-native
+          path: |
+            build/sstate-cache
+            build/cache/hashserv.db*
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 3
+
   build:
     name: ${{ matrix.machine }}
+    needs: toolchain
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     permissions:
@@ -63,91 +127,23 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
-      - name: Free up runner disk space
-        run: |
-          # Strip the large preinstalled toolchains and images the Yocto
-          # build never uses. Tolerate missing packages.
-          sudo apt-get remove -yq \
-            '^dotnet-.*' '^llvm-.*' 'php.*' \
-            azure-cli google-cloud-sdk firefox google-chrome-stable \
-            powershell mono-complete > /dev/null 2>&1 || true
-          sudo apt-get autoremove -y > /dev/null 2>&1 || true
-          sudo apt-get clean
-          sudo rm -rf "${AGENT_TOOLSDIRECTORY:-/opt/hostedtoolcache}" \
-            /usr/local/lib/android /usr/local/share/boost \
-            /usr/share/dotnet /usr/share/swift \
-            /opt/ghc /usr/local/.ghcup
-          # Preloaded container images (~3 GiB); nothing in this job uses docker.
-          sudo docker image prune -af > /dev/null 2>&1 || true
-          df -h /
-
-      - name: Install Yocto host dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            bc build-essential chrpath cpio diffstat file gawk git \
-            git-lfs iputils-ping jq libacl1 libegl1 lz4 libsdl2-dev \
-            mesa-common-dev pylint python3 python3-git python3-jinja2 \
-            python3-pexpect python3-subunit socat texinfo unzip \
-            wget xterm xz-utils zstd locales
-          # Some layer scripts expect bash as /bin/sh.
-          sudo rm -f /bin/sh && sudo ln -s bash /bin/sh
-
-      - name: Enable BitBake user namespaces
-        run: |
-          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-
-      - name: Restore Yocto sstate cache
-        # Skipped for a clean build (use_cache unchecked). Compared as a
-        # string so it also works when build-all-seeed-boards dispatches
-        # this workflow through the API, which sends inputs as strings.
-        if: ${{ format('{0}', inputs.use_cache) != 'false' }}
-        uses: actions/cache/restore@v4
+      - name: Set up Yocto build
+        uses: ./.github/actions/yocto-setup
         with:
-          path: build/sstate-cache
-          key: balena-${{ matrix.machine }}-sstate-${{ github.sha }}
-          # Fallback to any seeed machine's cache: sstate is
-          # content-addressed and the native/allarch tasks are identical
-          # across machines, so a sibling board's cache still covers the
-          # bulk of the build (this is what saves a cold-start board
-          # when its own cache was evicted by the 10 GiB repo quota).
-          restore-keys: |
-            balena-${{ matrix.machine }}-sstate-
-            balena-seeed-
+          build_type: ${{ inputs.build_type }}
+
+      - name: Restore this run's native sstate
+        uses: actions/download-artifact@v4
+        with:
+          name: sstate-native
+          path: build
 
       - name: Build balenaOS image
-        # Cap below the 360 min job maximum so the sstate banking steps
-        # below run in a live job instead of the post-cancellation
-        # grace window. A cold build may hit this on purpose: the sstate
-        # saved below lets the next run converge.
         timeout-minutes: 330
         env:
           BALENA_DEVICE_TYPE: ${{ matrix.machine }}
         run: |
-          if [ "${{ inputs.build_type }}" = "development" ]; then
-            BUILD_OPTIONS="-d"
-          else
-            BUILD_OPTIONS=""
-          fi
-          ./balena-yocto-scripts/build/barys --dry-run $BUILD_OPTIONS
-          # CI-only build tuning, learned from the meta-seeed-cm4 CI
-          # (kas/ci.yml): rm_work deletes each task's work directory once
-          # its output is committed to sstate/deploy, keeping tmp/ far
-          # below the runner's ~14 GB free disk (a full tmp/work for the
-          # ~7k-task balenaOS graph would otherwise flirt with the
-          # BB_DISKMON HALT thresholds in the local.conf template and
-          # stall the build on disk pressure). The zlib/pigz premirrors
-          # route around the intermittently-corrupt zlib.net tarballs
-          # (verified bad checksums on two networks).
-          # (The heredoc body is indented like the rest of this block;
-          # YAML strips that common indent, so the shell still sees it
-          # at column 0. Unindented lines here end the YAML block scalar
-          # and break the whole workflow file.)
-          cat >> build/conf/local.conf <<'CONF'
-          INHERIT += "rm_work"
-          PREMIRRORS:prepend = "https://zlib.net/ https://github.com/madler/zlib/releases/download/v1.3.2/ \n"
-          PREMIRRORS:prepend = "http://zlib.net/pigz/fossils/ https://downloads.yoctoproject.org/mirror/sources/ \n"
-          CONF
+          du -sh build/sstate-cache
           source layers/openembedded-core/oe-init-build-env
           MACHINE=${{ matrix.machine }} bitbake balena-image
           df -h /
@@ -159,36 +155,6 @@ jobs:
           path: build/tmp/deploy/images/${{ matrix.machine }}/
           if-no-files-found: error
           retention-days: 14
-
-      - name: Prepare sstate cache for save
-        # Shrink below the 10 GiB per-cache limit before saving; runs even
-        # on failure/budget-stop so partial progress is banked.
-        if: always()
-        run: |
-          if [ -f layers/openembedded-core/scripts/sstate-cache-management.py ]; then
-            if [ -d build/tmp/stamps ]; then
-              python3 layers/openembedded-core/scripts/sstate-cache-management.py -y -v \
-                --cache-dir=build/sstate-cache \
-                --stamps-dir=build/tmp/stamps \
-                || echo "WARNING: unused-sstate cleanup failed"
-            fi
-            python3 layers/openembedded-core/scripts/sstate-cache-management.py -y -v \
-              --cache-dir=build/sstate-cache \
-              --remove-duplicated \
-              || echo "WARNING: duplicate-sstate cleanup failed"
-          else
-            echo "sstate-cache-management.py not found, skipping cleanup"
-          fi
-          rm -rf build/tmp/work 2>/dev/null || true
-          du -sh build/sstate-cache || true
-          df -h /
-
-      - name: Save Yocto sstate cache
-        if: always()
-        uses: actions/cache/save@v4
-        with:
-          path: build/sstate-cache
-          key: balena-${{ matrix.machine }}-sstate-${{ github.sha }}
 
       - name: Upload release assets
         if: ${{ inputs.tag_name != '' }}
