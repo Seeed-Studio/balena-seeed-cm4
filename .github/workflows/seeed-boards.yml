@@ -100,9 +100,27 @@ jobs:
         # hashserv.db carries the hash-equivalence mapping so the board
         # jobs resolve exactly the same sstate objects.
         run: |
-          shopt -s nullglob
           cd build
-          tar -cf "$RUNNER_TEMP/sstate-native.tar" sstate-cache cache/hashserv.db*
+          # The bitbake server, and the hash-equivalence server it runs,
+          # keeps shutting down for a few seconds after the bitbake
+          # client returns, and closing hashserv.db then deletes its
+          # -wal/-shm files (an earlier run's tar failed on exactly that).
+          # bitbake.lock is released before the processes exit, so wait
+          # on the processes themselves.
+          BITBAKE_PROCS='^[^ ]*python3[^ ]* [^ ]*/bitbake/bin/bitbake'
+          for i in $(seq 120); do
+            pgrep -f "$BITBAKE_PROCS" > /dev/null || break
+            sleep 1
+          done
+          if pgrep -af "$BITBAKE_PROCS"; then
+            echo "ERROR: bitbake still running after 120 s"
+            exit 1
+          fi
+          # Fold the WAL into the main file; closing this last connection
+          # removes -wal/-shm, leaving one self-contained database.
+          python3 -c 'import sqlite3; c = sqlite3.connect("cache/hashserv.db"); c.execute("PRAGMA wal_checkpoint(TRUNCATE)"); c.close()'
+          ls -l cache/hashserv.db*
+          tar -cf "$RUNNER_TEMP/sstate-native.tar" sstate-cache cache/hashserv.db
           ls -lh "$RUNNER_TEMP/sstate-native.tar"
 
       - name: Hand the native sstate to the board jobs
