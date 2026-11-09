@@ -126,6 +126,7 @@ jobs:
       - name: Hand the native sstate to the board jobs
         # Run-scoped: board jobs of this run (and their re-runs) download
         # it; later runs never see it, so every run stays a clean build.
+        # overwrite: a "Re-run all jobs" attempt uploads the same name again.
         uses: actions/upload-artifact@v4
         with:
           name: sstate-native
@@ -133,6 +134,7 @@ jobs:
           if-no-files-found: error
           compression-level: 0
           retention-days: 3
+          overwrite: true
 
   build:
     name: ${{ matrix.machine }}
@@ -187,6 +189,7 @@ jobs:
           path: build/tmp/deploy/images/${{ matrix.machine }}/
           if-no-files-found: error
           retention-days: 14
+          overwrite: true
 
       - name: Upload release assets
         if: ${{ inputs.tag_name != '' }}
