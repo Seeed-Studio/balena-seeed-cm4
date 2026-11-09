@@ -92,18 +92,26 @@ jobs:
           du -sh sstate-cache
           df -h /
 
+      - name: Pack the native sstate
+        # upload-artifact rejects file names containing ':' (NTFS
+        # portability), and every sstate object is named
+        # sstate:<pn>:...:<hash>_<task>.tar.zst, so ship one tarball.
+        # No compression: the sstate objects are already zstd-compressed.
+        # hashserv.db carries the hash-equivalence mapping so the board
+        # jobs resolve exactly the same sstate objects.
+        run: |
+          shopt -s nullglob
+          cd build
+          tar -cf "$RUNNER_TEMP/sstate-native.tar" sstate-cache cache/hashserv.db*
+          ls -lh "$RUNNER_TEMP/sstate-native.tar"
+
       - name: Hand the native sstate to the board jobs
         # Run-scoped: board jobs of this run (and their re-runs) download
         # it; later runs never see it, so every run stays a clean build.
-        # sstate objects are already zstd-compressed, so skip recompression.
-        # hashserv.db carries the hash-equivalence mapping so the board
-        # jobs resolve exactly the same sstate objects.
         uses: actions/upload-artifact@v4
         with:
           name: sstate-native
-          path: |
-            build/sstate-cache
-            build/cache/hashserv.db*
+          path: ${{ runner.temp }}/sstate-native.tar
           if-no-files-found: error
           compression-level: 0
           retention-days: 3
@@ -132,11 +140,17 @@ jobs:
         with:
           build_type: ${{ inputs.build_type }}
 
-      - name: Restore this run's native sstate
+      - name: Download this run's native sstate
         uses: actions/download-artifact@v4
         with:
           name: sstate-native
-          path: build
+          path: ${{ runner.temp }}/sstate-native
+
+      - name: Unpack the native sstate
+        run: |
+          tar -xf "$RUNNER_TEMP/sstate-native/sstate-native.tar" -C build
+          rm -f "$RUNNER_TEMP/sstate-native/sstate-native.tar"
+          ls -l build/cache/
 
       - name: Build balenaOS image
         timeout-minutes: 330
