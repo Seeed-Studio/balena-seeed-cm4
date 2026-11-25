@@ -6,36 +6,6 @@
 INSANE_SKIP:${PN} += "buildpaths"
 
 do_compile:prepend() {
-    # The R110x overlay's sdhost fragments (SD card slot on GPIO 22-27)
-    # kill the 6.12 kernel before earlycon on CM4 boards: the serial
-    # console stays silent right after "Starting kernel ..." and the
-    # device looks completely dead. Drop the fragments and their
-    # overrides; the slot is non-essential (OS boots from eMMC).
-    # (balenaOS runs the 6.12 kernel pinned by this layer's layer.conf;
-    # the standalone build on main uses a newer kernel where this does
-    # not apply.)
-    python3 - <<'PYEOF'
-p = "overlays/rpi/reComputer-R110x-overlay.dts"
-s = open(p).read()
-for name in ("fragment@1a", "fragment@1b"):
-    start = s.find("\t" + name + " {")
-    if start < 0:
-        continue
-    i = s.find("{", start)
-    depth = 0
-    for j in range(i, len(s)):
-        if s[j] == "{":
-            depth += 1
-        elif s[j] == "}":
-            depth -= 1
-            if depth == 0:
-                end = s.find("\n", j) + 1
-                s = s[:start] + s[end:]
-                break
-s = "\n".join(l for l in s.split("\n") if "&frag0>" not in l)
-open(p, "w").write(s)
-PYEOF
-
     # Rename the R100x overlay source to its v1.1 identity before the
     # tree is built, so the deployed artifact is
     # reComputer-R100x-1.1.dtbo.
