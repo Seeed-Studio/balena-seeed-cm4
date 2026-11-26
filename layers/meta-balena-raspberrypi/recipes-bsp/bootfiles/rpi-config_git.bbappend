@@ -12,8 +12,15 @@ do_deploy:append() {
         echo "avoid_warnings=1" >>${DEPLOYDIR}/bootfiles/config.txt
     fi
 
+    # No spi0 on reComputer-R100x: its overlay (V1.1 default) routes
+    # GPIO8-11 to UART4 for RS485_3 and moves the TPM to spi1. spi0 would
+    # claim GPIO7-11 as well; bcm2835 pinctrl is not strict, so whichever
+    # driver muxes last wins, and spi-bcm2835 (a module) loads after the
+    # built-in PL011, taking the pins from RS485_3. meta-seeed-cm4's own
+    # config.txt rules exclude R100x for the same reason.
     if ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r2x', 'true', 'false', d)} \
-        && ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r22', 'true', 'false', d)} ; then
+        && ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r22', 'true', 'false', d)} \
+        && ! ${@bb.utils.contains('MACHINE', 'seeed-recomputer-r100x', 'true', 'false', d)} ; then
         echo "dtparam=spi=on" >> ${DEPLOYDIR}/bootfiles/config.txt
     fi
 
