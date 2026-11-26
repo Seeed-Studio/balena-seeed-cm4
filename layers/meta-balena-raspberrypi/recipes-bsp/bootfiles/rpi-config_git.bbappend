@@ -46,10 +46,6 @@ do_deploy:append() {
 		echo "dtoverlay=i2c3" >> ${DEPLOYDIR}/bootfiles/config.txt
 		# Enable VC4 KMS overlay for display
 		echo "dtoverlay=vc4-kms-v3d-pi4" >> ${DEPLOYDIR}/bootfiles/config.txt
-	elif [ "${MACHINE}" = "seeed-rerouter-cm4" ]; then
-		# Seeed reRouter CM4 board configuration
-		# Enable dual Gigabit Ethernet if needed
-		echo "dtparam=pciex1_gen=2" >> ${DEPLOYDIR}/bootfiles/config.txt
 	elif [ "${MACHINE}" = "seeed-recomputer-r100x" ]; then
 		# Use the Seeed reComputer R100x device tree overlay defaulting to v1.1
         echo "dtparam=i2c_arm=on" >> ${DEPLOYDIR}/bootfiles/config.txt
