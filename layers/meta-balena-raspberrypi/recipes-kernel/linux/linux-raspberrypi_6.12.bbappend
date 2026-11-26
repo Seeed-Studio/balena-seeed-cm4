@@ -26,6 +26,19 @@ SRC_URI:append = " \
 
 SRC_URI:remove:raspberrypi = "file://0010-dts-overlays-Add-UniPi-overlays.patch"
 
+# The Seeed machines get the reComputer-R100x overlay from the
+# seeed-linux-dtoverlays recipe (meta-seeed-cm4), which deploys it as
+# reComputer-R100x.dtbo. The kernel-tree copy this patch adds (an older,
+# V1.0-only revision) would deploy a file of the same name into the same
+# deploy dir, so leave it out for these machines.
+# Matched on MACHINE rather than with ":remove:<machine>" overrides:
+# bitbake does not treat ":remove:seeed-reterminal-DM" as a remove
+# operation because the override name contains uppercase letters.
+SEEED_DTOVERLAYS_MACHINES = "seeed-recomputer-r100x seeed-recomputer-r110x \
+    seeed-recomputer-r2x seeed-recomputer-r22 seeed-reterminal \
+    seeed-reterminal-DM seeed-rerouter-cm4"
+SRC_URI:remove = "${@'file://0001-overlays-Add-overlay-for-Seeed-reComputer-R1000.patch' if d.getVar('MACHINE') in d.getVar('SEEED_DTOVERLAYS_MACHINES').split() else ''}"
+
 # The Pi3-64 and Pi4-64 are the only boards very low on rootfs space for now
 # so we add this as per https://github.com/balena-os/meta-balena/pull/2411
 BALENA_CONFIGS:append:raspberrypi4-64 = " optimize-size"
