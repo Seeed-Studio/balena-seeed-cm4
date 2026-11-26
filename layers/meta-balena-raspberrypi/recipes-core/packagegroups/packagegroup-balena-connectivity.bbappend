@@ -130,6 +130,6 @@ CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r2x = " ${SEEED_UNUSED_CONNECTIVI
 CONNECTIVITY_FIRMWARES:remove:seeed-recomputer-r22 = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
 CONNECTIVITY_FIRMWARES:remove:seeed-rerouter-cm4 = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
 CONNECTIVITY_FIRMWARES:remove:seeed-reterminal = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
-# bitbake ignores ":remove:<override>" when the override has uppercase
-# letters, so seeed-reterminal-DM is matched on MACHINE instead.
-CONNECTIVITY_FIRMWARES:remove = "${@oe.utils.conditional('MACHINE', 'seeed-reterminal-DM', d.getVar('SEEED_UNUSED_CONNECTIVITY_FIRMWARES'), '', d)}"
+# seeed-reterminal-DM: bitbake ignores ":remove:<override>" when the
+# override has uppercase letters; use the machine's lowercase alias.
+CONNECTIVITY_FIRMWARES:remove:seeed-reterminal-dm = " ${SEEED_UNUSED_CONNECTIVITY_FIRMWARES} "
